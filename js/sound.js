@@ -26,7 +26,7 @@ function drawIcon() {
   for (let y = 0; y < rows.length; y++) {
     for (let x = 0; x < rows[y].length; x++) {
       if (rows[y][x] !== '#') continue;
-      g.fillStyle = !snd.on ? '#6f7b87' : x >= 5 ? '#ff0a1e' : '#c9d4de';
+      g.fillStyle = snd.on && x >= 5 ? '#ff0a1e' : '#c9d4de';   // same white as the corner texts; red waves when on
       g.fillRect(x * px, y * px, px, px);
     }
   }
