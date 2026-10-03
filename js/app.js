@@ -8,6 +8,7 @@ import { hudTicks, hudArcs, updateHud } from './eye/hud.js';
 import { setupLighting } from './eye/lighting.js';
 import { renderFrame } from './eye/pixel-boot.js';
 import { updateGrid } from './grid/grid.js';
+import { breachPix } from './grid/name.js';
 import { page, updatePage, updateTravel } from './pages.js';
 import { resize } from './layout.js';
 import { updateFireZone } from './input.js';
@@ -43,7 +44,7 @@ function frame() {
   updateFireZone();
   const tracking = updateGaze(t, dt);
   const react = eyeReaction(t);
-  state.reactPix = react.pix;
+  state.reactPix = Math.max(react.pix, breachPix(t));
   const glowLevel = updateEyeball(t, dt, tracking, react);
   updateBeatRings(dt);
   updateEars(t, dt);

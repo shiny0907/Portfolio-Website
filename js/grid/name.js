@@ -1,10 +1,11 @@
 // SHINING YU: the name built from grid squares, lit by the eye's gaze and destroyable by the laser
 import { hint, reduceMotion } from '../core.js';
-import { FONT } from '../pixel-font.js';
-import { state } from '../state.js';
+import { FONT, makeScramble, drawPixelText, pixelTextWidth, LABEL_COLOR } from '../pixel-font.js';
+import { state, beatRings } from '../state.js';
 import { page } from '../pages.js';
 import { grid, KEY, projectToGrid } from './grid.js';
-import { LABEL_Z } from './labels.js';
+import { LABEL_Z, labelGlyphs } from './labels.js';
+import { scrLeft, scrRight } from './corners.js';
 
 const NAME_TEXT = 'SHINING YU';
 const NAME_ROWS = 7, LETTER_GAP = 1, WORD_GAP = 3;
@@ -40,6 +41,7 @@ export const NAME_COLS = (function () {
   return x;
 })();
 export const nameMap = new Map();
+const nameAt = { topRow: 0, firstCol: 0 };
 let nameGlitchNext = 6;
 
 // Name sits low, with its top tucked under the lower edge of the clock rings
@@ -50,6 +52,8 @@ export function placeName() {
   const lastAllowed = Math.floor((grid.h - 44 * grid.dpr - grid.oy) / C) - 1;
   const topRow = Math.min(fromRing, lastAllowed - (NAME_ROWS - 1));
   const firstCol = -Math.floor(NAME_COLS / 2);
+  nameAt.topRow = topRow;
+  nameAt.firstCol = firstCol;
   nameMap.clear();
   nameBlocks.forEach(function (b) {
     b.i = firstCol + b.gx;
@@ -61,6 +65,7 @@ export function placeName() {
 
 export function drawName(ctx, t) {
   const C = grid.cell;
+  updateBreach(t);
   // Rare glitch: one square of the name flickers red
   if (state.booted && !reduceMotion && t > nameGlitchNext) {
     const alive = nameBlocks.filter(function (b) { return b.state === 0; });
@@ -104,5 +109,106 @@ export function drawName(ctx, t) {
     }
     ctx.fillRect(grid.ox + (b.i + ns) * C, grid.oy + b.j * C, C, C);
     ctx.shadowBlur = 0;
+  }
+  ctx.globalAlpha = 1;
+  drawBreachMessage(ctx, t);
+}
+
+// ---------- Breach: laser off every square of the name and the system reacts ----------
+// Glitch (0.5 s), SYSTEM BREACH decodes in where the name was, holds, scrambles out, then the name rebuilds
+const BREACH_MSG = 'SYSTEM BREACH';
+const B_GLITCH = 0.5, B_OUT = 2.0, B_REBUILD = 2.4, B_REBUILD_DUR = 1.5;
+const BREACH_PIX = [1, 0, 0.6, 0.34, 0, 0.6, 0];   // same stutter as the click glitch
+const breach = { active: false, start: 0, kicked: false, rebuilt: false, count: 0, msg: null, sub: null, subText: '' };
+try { breach.count = +sessionStorage.getItem('breach-count') || 0; } catch (err) { breach.count = 0; }
+
+// Scramble every character of a text, starting now
+function scrambleAll(arr, t, dur) {
+  arr.forEach(function (c, i) {
+    c.start = Math.min(c.start, t + i * 0.02);
+    c.end = t + dur * (0.5 + Math.random() * 0.5);
+  });
+}
+// A message decodes in at `inAt` and scrambles back out by `goneBy`
+function messageScramble(len, inAt, outAt, goneBy) {
+  const scr = makeScramble(len, inAt);
+  scr.forEach(function (c) {
+    c.outAt = reduceMotion ? goneBy : outAt + Math.random() * 0.15;
+    c.gone = reduceMotion ? goneBy : Math.min(goneBy, c.outAt + 0.1 + Math.random() * 0.15);
+  });
+  return scr;
+}
+
+function startBreach(t) {
+  breach.active = true;
+  breach.start = t;
+  breach.rebuilt = false;
+  breach.count++;
+  try { sessionStorage.setItem('breach-count', String(breach.count)); } catch (err) { /* private mode: count just won't persist */ }
+  breach.msg = messageScramble(BREACH_MSG.length, t + B_GLITCH, t + B_OUT, t + B_REBUILD);
+  breach.subText = breach.count > 1 ? 'BREACH ' + (breach.count < 10 ? '0' : '') + breach.count : '';
+  breach.sub = breach.subText ? messageScramble(breach.subText.length, t + B_GLITCH + 0.35, t + B_OUT, t + B_REBUILD) : null;
+  state.glitchUntil = Math.max(state.glitchUntil, t + B_GLITCH);   // glow flicker
+  if (reduceMotion) return;
+  // Every bit of system text breaks up, and the HUD rings jolt
+  scrambleAll(scrLeft, t, 0.6);
+  scrambleAll(scrRight.slice(0, scrRight.length - 8), t, 0.6);      // never the clock digits
+  scrambleAll(labelGlyphs.filter(function (g) { return g.rows; }).map(function (g) { return g.scr; }), t, 0.6);
+  beatRings[3].angle -= 0.5;
+  beatRings[4].angle += 0.7;
+}
+
+function updateBreach(t) {
+  if (!breach.active) {
+    // Fires the moment the last living square takes a direct hit
+    for (let k = 0; k < nameBlocks.length; k++) {
+      const b = nameBlocks[k];
+      if (b.state === 0) return;
+    }
+    startBreach(t);
+    return;
+  }
+  const e = t - breach.start;
+  if (!reduceMotion && !breach.kicked && e > 0.25) {
+    breach.kicked = true;
+    beatRings[4].angle -= 0.45;
+  }
+  if (!breach.rebuilt && e >= B_REBUILD) {
+    // The name comes back square by square in random order, each one flashing red as it lands
+    breach.rebuilt = true;
+    nameBlocks.forEach(function (b) {
+      b.state = 0;
+      b.glitchUntil = 0;
+      b.appearAt = reduceMotion ? t - 1 : t + Math.random() * B_REBUILD_DUR;
+    });
+  }
+  if (e >= B_REBUILD + B_REBUILD_DUR) {
+    breach.active = false;
+    breach.kicked = false;
+  }
+}
+
+// The eye's pixel stutter during the glitch (grid-aligned pixel size, 0 = sharp)
+export function breachPix(t) {
+  if (!breach.active || reduceMotion) return 0;
+  const e = t - breach.start;
+  if (e >= B_GLITCH) return 0;
+  return Math.round(grid.cell * (BREACH_PIX[Math.floor(e / 0.07)] || 0));
+}
+
+function drawBreachMessage(ctx, t) {
+  if (!breach.active || t - breach.start >= B_REBUILD) return;
+  const C = grid.cell, ns = grid.nameShift;
+  // Half-square pixels so it fits wherever the name does; edges snapped to the grid
+  const px = Math.max(1, Math.floor(C / 2));
+  const cx = grid.ox + (nameAt.firstCol + ns + NAME_COLS / 2) * C;
+  const snap = function (x) { return grid.ox + Math.round((x - grid.ox) / C) * C; };
+  const top = grid.oy + (nameAt.topRow + (breach.sub ? 1 : 2)) * C;
+  const red = function () { return '#ff0a1e'; };
+  drawPixelText(ctx, BREACH_MSG, snap(cx - pixelTextWidth(BREACH_MSG, px) / 2), top, px, red, breach.msg, t);
+  if (breach.sub) {
+    const sp = Math.max(1, Math.floor(C / 4));
+    drawPixelText(ctx, breach.subText, snap(cx - pixelTextWidth(breach.subText, sp) / 2), top + 4 * C, sp,
+      function () { return LABEL_COLOR; }, breach.sub, t);
   }
 }

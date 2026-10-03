@@ -77,10 +77,11 @@ export function makeScramble(len, appear) {
   }
   return out;
 }
-// Returns 'hidden', a glitch glyph, or null (show the real character)
+// Returns 'hidden', a glitch glyph, or null (show the real character).
+// Optional c.outAt / c.gone scramble a character back out: glitching from outAt, hidden from gone.
 export function scrambleState(c, t, wdt) {
-  if (t < c.start) return 'hidden';
-  if (t >= c.end) return null;
+  if (t < c.start || t >= c.gone) return 'hidden';
+  if (t >= c.end && !(t >= c.outAt)) return null;
   const pool = GLITCH_POOL[wdt];
   if (!pool) return null;
   if (!c.glyph || t >= c.next || c.glyph[0].length !== wdt) {

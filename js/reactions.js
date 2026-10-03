@@ -4,7 +4,6 @@ import { glitchRun } from './pixel-font.js';
 import { grid } from './grid/grid.js';
 import { scrLeft, scrRight, CORNER_LEFT, CLOCK_PLACE } from './grid/corners.js';
 import { ears, earTwitch } from './eye/ears.js';
-import { hudArcs } from './eye/hud.js';
 
 // ---------- Click reactions ----------
 // Clicking the eye plays one of five reactions (never the same one twice in a row).
@@ -56,7 +55,7 @@ export function eyePoke(t) {
     state.glitchUntil = t + 0.55;
     glitchRun(scrLeft, t, 0, CORNER_LEFT.length);
     glitchRun(scrRight, t, 0, CLOCK_PLACE.length);
-    hudArcs.rotation.z += 0.6;
+    beatRings[4].angle += 0.6;     // kick the ring spring (setting rotation directly gets overwritten every frame)
   } else if (type === 'happy') {
     // Happy squint from below, a little hop, ears wiggle
     ears.forEach(function (ear, i) {

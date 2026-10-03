@@ -1,11 +1,11 @@
-// ABOUT ME / PORTFOLIO: pixel letters riding the gray bracket arcs around the eye
+// ABOUT ME / PORTFOLIO: pixel letters set along the ring of the gray bracket arcs, fixed on either side of the eye
 import { renderer, camera, reduceMotion, clamp, lerp, camBase } from '../core.js';
 import { FONT, makeScramble, scrambleState } from '../pixel-font.js';
 import { state } from '../state.js';
 import { grid, projectToGrid } from './grid.js';
 import { placeName } from './name.js';
 
-// Side labels: stacked pixel letters that ride along the outer gray curves as they turn. They can't be destroyed.
+// Side labels: stacked pixel letters along the outer gray ring, left and right. They can't be destroyed.
 export const SIDE_LABELS = [
   { text: 'ABOUT ME', side: -1, h: 0, hovered: false },
   { text: 'PORTFOLIO', side: 1, h: 0, hovered: false }
@@ -19,7 +19,7 @@ const LABEL_RADIUS = 2.27;   // world units, the gray bracket arcs
 export const LABEL_Z = -1.2;        // same depth as the rings
 export const labelGlyphs = [];      // { rows, x, y } in device pixels, plus appear timing
 export let labelPx = 3;
-export const labelGeo = { cx: 0, cy: 0, cx0: 0, cy0: 0, ppu: 1, R: 0, k: 0, angQ: null, dirty: true };
+export const labelGeo = { cx: 0, cy: 0, cx0: 0, cy0: 0, ppu: 1, R: 0, dirty: true };
 function pushLabelGlyphs(lab, startAt, spread) {
   for (let k = 0; k < lab.text.length; k++) {
     const ch = lab.text[k];
@@ -69,32 +69,14 @@ export function layoutLabels() {
   labelGeo.dirty = true;
 }
 
-// Position every label letter on its curve for the current bracket angle
-function placeLabels(t) {
-  // The labels' ring travels with the eye
+// Position every label letter on its curve. The words stay put (ABOUT ME at 9 o'clock, PORTFOLIO at 3)
+// instead of turning with the brackets; only the ring's centre moves, travelling with the eye.
+function placeLabels() {
   const ncx = labelGeo.cx0 + state.rigX * labelGeo.ppu * (camBase.z - LABEL_Z) / camBase.z;
   if (Math.abs(ncx - labelGeo.cx) > 0.25) { labelGeo.cx = ncx; labelGeo.dirty = true; }
-  // PORTFOLIO takes whichever bracket is on the right half, ABOUT ME the left.
-  // A little hysteresis stops them flipping back and forth when the arcs point straight up or down.
-  let ang = state.bracketRot + labelGeo.k * Math.PI;
-  const norm = Math.atan2(Math.sin(ang), Math.cos(ang));
-  if (Math.abs(norm) > Math.PI / 2 + 0.15) {
-    labelGeo.k += 1;
-    ang += Math.PI;
-    labelGeo.angQ = null;
-    // Swapping arcs: both words scramble back in
-    labelGlyphs.forEach(function (g) { g.scr.start = Math.min(g.scr.start, t); g.scr.end = t + 0.15 + Math.random() * 0.3; });
-  }
-  // Move only in whole steps of about 0.7 degrees, all letters together. Rounding each letter to
-  // whole pixels every frame made them twitch against each other; stepping keeps the word rigid.
-  const STEP = 0.012;
-  if (labelGeo.angQ === null || Math.abs(ang - labelGeo.angQ) > STEP * 0.75) {
-    labelGeo.angQ = Math.round(ang / STEP) * STEP;
-    labelGeo.dirty = true;
-  }
   if (!labelGeo.dirty) return;
   labelGeo.dirty = false;
-  ang = labelGeo.angQ;
+  const ang = 0;
   const R = labelGeo.R, lp = labelPx, glyphH = 7 * lp;
   for (let k = 0; k < labelGlyphs.length; k++) {
     const g = labelGlyphs[k];
@@ -112,7 +94,7 @@ function placeLabels(t) {
 
 // Hover detection, the selection rail, then the letters themselves
 export function drawLabels(ctx, t, dt) {
-  placeLabels(t);
+  placeLabels();
   ctx.globalAlpha = 1;
   const lp = labelPx;
 

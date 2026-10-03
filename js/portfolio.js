@@ -208,7 +208,9 @@ function drawTrack(t) {
   const u = Math.max(1, Math.round(dpr));            // one hairline
   const px = Math.max(1, Math.round(2 * dpr));       // pixel-font size
   const top = 4 * px, span = H - 8 * px;
-  const railX = Math.round(W * 0.5);
+  // Center the gauge by its real width (arrow 9px left of the rail, numbers end 14px right of it);
+  // px rounds up on some scalings (dpr 1.25 -> 3), so a fixed midpoint would clip the numbers
+  const railX = Math.round((W - 23 * px) / 2) + 9 * px;
   const frac = ((car.pos % PN) + PN) % PN;
   // When the loop wraps the pointer jumps; make the jump a glitch instead of a slide
   if (trackState.lastFrac !== null && Math.abs(frac - trackState.lastFrac) > PN / 2) trackState.glitchUntil = t + 0.2;
