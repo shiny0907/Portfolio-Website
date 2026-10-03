@@ -1459,7 +1459,7 @@
     hudMats.push(m);
     return m;
   }
-  hud.add(new THREE.Mesh(new THREE.RingGeometry(1.78, 1.786, 180), hudMat(0xc9d4de, 1, 0.12)));
+  hud.add(new THREE.Mesh(new THREE.RingGeometry(1.78, 1.795, 180), hudMat(0xc9d4de, 1, 0.28)));
 
   const hudArcs = new THREE.Group();
   hud.add(hudArcs);
@@ -1512,19 +1512,28 @@
   rimRed.position.set(5, -3, -5);
   scene.add(rimRed);
 
-  // Additive materials add light only. Leaving alpha untouched stops fading sparks and glows
-  // from leaving dark specks where the transparent canvas sits over the page background.
+  // Additive materials add light. The shader premultiplies the colour and writes alpha as the
+  // brightest channel, so glows over the transparent canvas are valid premultiplied pixels.
+  // (Colour with zero alpha only shows up in some browsers, and alpha that doesn't follow the
+  // colour leaves dark specks where faded sparks sit over the page background.)
+  function glowShader(shader) {
+    shader.fragmentShader = shader.fragmentShader.replace('#include <fog_fragment>',
+      '#include <fog_fragment>\n' +
+      'gl_FragColor.rgb *= gl_FragColor.a;\n' +
+      'gl_FragColor.a = max(gl_FragColor.r, max(gl_FragColor.g, gl_FragColor.b));');
+  }
   scene.traverse(function (o) {
     if (!o.material) return;
     (Array.isArray(o.material) ? o.material : [o.material]).forEach(function (m) {
       if (m.blending !== THREE.AdditiveBlending) return;
       m.blending = THREE.CustomBlending;
       m.blendEquation = THREE.AddEquation;
-      m.blendSrc = THREE.SrcAlphaFactor;
+      m.blendSrc = THREE.OneFactor;
       m.blendDst = THREE.OneFactor;
       m.blendEquationAlpha = THREE.AddEquation;
-      m.blendSrcAlpha = THREE.ZeroFactor;
+      m.blendSrcAlpha = THREE.OneFactor;
       m.blendDstAlpha = THREE.OneFactor;
+      m.onBeforeCompile = glowShader;
     });
   });
 
@@ -1612,7 +1621,7 @@
     aperture: 0.0, apertureTarget: 0.045,
     glitchUntil: 0, glitchValue: 1, glitchNextStep: 0, booted: false,
     beatPulse: 0, earNext: 5, firing: false, anger: 0, beam: 0,
-    prevVyaw: 0, prevVpitch: 0, accYaw: 0, accPitch: 0, pointerDown: false, overEye: false, overEar: null, recoil: 0, vRecoil: 0, shakeUntil: 0, annoy: 0, pokes: [], glanceUntil: 0, glanceYaw: 0, glancePitch: 0, firedThisPress: false, rigX: 0, vRigX: 0, travel: 0, impactX: null, impactY: null, gazeX: -1e5, gazeY: -1e5,
+    prevVyaw: 0, prevVpitch: 0, accYaw: 0, accPitch: 0, pointerDown: false, pointerDownAt: 0, overEye: false, overEar: null, recoil: 0, vRecoil: 0, shakeUntil: 0, annoy: 0, pokes: [], glanceUntil: 0, glanceYaw: 0, glancePitch: 0, firedThisPress: false, rigX: 0, vRigX: 0, travel: 0, impactX: null, impactY: null, gazeX: -1e5, gazeY: -1e5,
     jitY: 0, jitP: 0, jitTY: 0, jitTP: 0, jitNext: 0,
     bracketRot: 0, bracketVel: 0
   };
@@ -1705,6 +1714,7 @@
     pressedEye = state.overEye;
     state.firedThisPress = false;
     state.pointerDown = true;   // the frame loop decides whether the laser can actually fire
+    state.pointerDownAt = nowSec();
     if (state.booted) dismissHint();
   });
   let pressedEl = null;
@@ -2028,10 +2038,15 @@
     car.titleText = pr.title;
     pfCards.forEach(function (c, i) { c.el.classList.toggle('is-current', i === k); });
   }
+  // Every title shares one pixel size, sized so the longest one still fits the details column
+  const pfDetails = pfTitle.parentElement;
+  const pfTitleUnits = Math.max.apply(null, PROJECTS.map(function (p) { return pixelTextWidth(p.title, 1); }));
   function drawPfTitle(t) {
     if (!car.titleText) return;
     const vw = stage.clientWidth || window.innerWidth;
-    const dpr = grid.dpr, pxD = Math.max(2, Math.round((vw >= 1700 ? 6 : vw >= 1300 ? 5 : 4) * dpr));
+    const dpr = grid.dpr;
+    const fitD = Math.floor(pfDetails.clientWidth * dpr / pfTitleUnits);
+    const pxD = Math.max(2, Math.min(Math.round((vw >= 1700 ? 6 : vw >= 1300 ? 5 : 4) * dpr), fitD));
     const W = pixelTextWidth(car.titleText, pxD), H = 7 * pxD;
     if (pfTitle.width !== W || pfTitle.height !== H) {
       pfTitle.width = W; pfTitle.height = H;
@@ -2508,7 +2523,7 @@
         }
       }
       state.overEye = state.hasPointer && state.booted && inside && !state.overEar && !state.firing;
-      const wantFire = state.pointerDown && state.booted && !inside;
+      const wantFire = state.pointerDown && state.booted && (!inside || nowSec() - state.pointerDownAt > 0.3);
       if (wantFire && !state.firing) startFiring();
       else if (!wantFire && state.firing) stopFiring();
     }
