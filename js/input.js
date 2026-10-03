@@ -45,6 +45,11 @@ window.addEventListener('pointermove', function (e) {
   setPointer(e);
   if (!hintTimer && !hintDismissed) hintTimer = setTimeout(dismissHint, 12000);
 }, { passive: true });
+// Browsers only report the mouse position through events. When the page loads (or the loading screen opens)
+// under a resting mouse, the first one is pointerover, so the cursor shows up without having to move
+window.addEventListener('pointerover', setPointer, { passive: true });
+// ...and pick up anything that happened before this module loaded (recorded by the inline script in index.html)
+if (window.__ptr && window.__ptr.pointerType !== 'touch') setPointer(window.__ptr);
 window.addEventListener('pointerdown', function (e) {
   setPointer(e);
   if (e.button !== 0) return;

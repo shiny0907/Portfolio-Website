@@ -9,6 +9,14 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/styles.css">
+<!-- Remember where the pointer is from the very first instant, before the modules (and Three.js) have loaded,
+     so the custom cursor can appear right away instead of waiting for the next mouse move -->
+<script>
+  window.__ptr = null;
+  ['pointermove', 'pointerover', 'pointerdown'].forEach(function (n) {
+    addEventListener(n, function (e) { window.__ptr = { clientX: e.clientX, clientY: e.clientY, pointerType: e.pointerType }; }, { passive: true, capture: true });
+  });
+</script>
 <!-- Fetch every module in parallel up front (they still only run after main.js checks for WebGL) -->
 <link rel="modulepreload" href="js/core.js">
 <link rel="modulepreload" href="js/app.js">

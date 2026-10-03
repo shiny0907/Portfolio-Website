@@ -19,7 +19,7 @@ stage.appendChild(cv);
 const ctx = cv.getContext('2d');
 
 const cur = {
-  touch: false, lastDraw: 0, frameMs: 16, slow: false, lastFrame: 0,
+  touch: false, lastDraw: 0, lastT: 0, frameMs: 16, slow: false, lastFrame: 0,
   key: '', from: null, to: null, flyStart: -1,   // bracket frame and its fly-out tween
   label: '', labelScr: null, scrText: '',
   fireStart: 0, trail: [], lastCell: null
@@ -29,6 +29,8 @@ const FLY = 0.09;
 // Touch never gets the custom cursor; a mouse or pen brings it back
 window.addEventListener('pointermove', function (e) { cur.touch = e.pointerType === 'touch'; }, { passive: true });
 window.addEventListener('pointerdown', function (e) { cur.touch = e.pointerType === 'touch'; }, { passive: true });
+window.addEventListener('pointerover', function (e) { cur.touch = e.pointerType === 'touch'; }, { passive: true });
+if (window.__ptr) cur.touch = window.__ptr.pointerType === 'touch';
 
 // Safety net: the native cursor is only hidden while this one is actually drawing.
 // If frames stop arriving (an error, a stalled loop) the system cursor comes straight back.
@@ -41,7 +43,7 @@ setInterval(function () {
 }, 200);
 
 function active() {
-  return fine && fine.matches && !cur.touch && state.hasPointer && state.booted && !cur.slow;
+  return fine && fine.matches && !cur.touch && state.hasPointer && !cur.slow;   // from the loading screen on, not just after boot
 }
 // A canvas cursor can only be as smooth as the frame loop. If frames get slow (under about 10 fps)
 // hand back to the native cursor, and only take over again once things are smooth, so it never flickers.
@@ -154,6 +156,9 @@ export function drawCursor(t) {
   if (cv.width !== grid.w || cv.height !== grid.h) { cv.width = grid.w; cv.height = grid.h; }
   ctx.clearRect(0, 0, cv.width, cv.height);
   trackFrameRate();
+  // The scene clock restarts when the loading screen hands over; drop anything timed on the old clock
+  if (t < cur.lastT - 0.05) { cur.flyStart = -1; cur.trail = []; cur.scrText = ''; cur.labelScr = null; coordScr = null; }
+  cur.lastT = t;
   cur.lastDraw = performance.now();   // the loop is alive
   if (!active()) { root.classList.remove('cursor-on'); return; }
   root.classList.add('cursor-on');

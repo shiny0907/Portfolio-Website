@@ -1,6 +1,7 @@
-import { renderer, scene, camera, reduceMotion, clamp } from './core.js';
+import { renderer, scene, camera, reduceMotion, clamp, nowSec } from './core.js';
 import { makeScramble, drawPixelText, pixelTextWidth } from './pixel-font.js';
 import { grid } from './grid/grid.js';
+import { drawCursor } from './cursor.js';
 
 // ---------- Loading screen ----------
 // A dark boot screen on the grid: data squares flicker, a scan line sweeps down, a big pixel counter
@@ -161,6 +162,7 @@ export function runLoader(startScene) {
     if (lt < T.split) {
       drawBoot(lt);
       g.drawImage(frame, 0, 0);
+      drawCursor(nowSec());   // the custom cursor is there from the start (the scene's frame loop takes over below)
     } else {
       if (!started) { started = true; startScene(); }
       if (reduceMotion) {
