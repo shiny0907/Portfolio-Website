@@ -8,6 +8,7 @@ import { grid } from './grid/grid.js';
 import { hoveredLabel, labelBounds } from './grid/labels.js';
 import { rig } from './eye/eyeball.js';
 import { trackRowAt } from './portfolio.js';
+import { POKE_MAX } from './input.js';
 
 const root = document.documentElement;
 const fine = window.matchMedia ? window.matchMedia('(pointer: fine)') : null;
@@ -20,7 +21,7 @@ const ctx = cv.getContext('2d');
 const cur = {
   touch: false, lastDraw: 0, frameMs: 16, slow: false, lastFrame: 0,
   key: '', from: null, to: null, flyStart: -1,   // bracket frame and its fly-out tween
-  label: '', labelScr: null,
+  label: '', labelScr: null, scrText: '',
   fireStart: 0, trail: [], lastCell: null
 };
 const FLY = 0.09;
@@ -170,7 +171,6 @@ export function drawCursor(t) {
     cur.flyStart = (reduceMotion || (key === 'cell' && cur.key === 'cell')) ? -1 : t;
     cur.key = key;
     cur.label = tg && tg.rect ? tg.label : '';
-    cur.labelScr = cur.label ? makeScramble(cur.label.length, t) : null;
   }
   cur.to = goal;
   let fr = goal;
@@ -180,18 +180,17 @@ export function drawCursor(t) {
       w: cur.from.w + (goal.w - cur.from.w) * e, h: cur.from.h + (goal.h - cur.from.h) * e };
   }
 
-  // Charging: holding to fire pulls the brackets in a pixel at a time and fills a 4-segment bar.
-  // Inside the eye the first 0.3 s of a hold is a poke, so the bar fills over that window first.
+  // Charging: holding to fire pulls the brackets in a pixel at a time and fills a 4-segment bar
   if (!state.firing) cur.fireStart = t;
-  let charge = 0;
-  if (state.firing) charge = clamp((t - cur.fireStart) / 0.6, 0, 1);
-  else if (state.pointerDown && state.inNoFire) charge = clamp((t - state.pointerDownAt) / 0.3, 0, 1) * 0.75;
+  const charge = state.firing ? clamp((t - cur.fireStart) / 0.6, 0, 1) : 0;
+  // Blocked: holding on the eye (its no-fire zone). A quick click is a poke, so this only shows once the press is too long to be one.
+  const blocked = state.pointerDown && state.inNoFire && !state.firing && t - state.pointerDownAt > POKE_MAX;
   // The frame pops out three pixels when the laser starts, then steps back in onto the square
   const out = state.firing && !reduceMotion ? Math.max(0, 3 - Math.floor((t - cur.fireStart) / 0.05)) * u : 0;
   if (out) fr = { x: fr.x - out, y: fr.y - out, w: fr.w + 2 * out, h: fr.h + 2 * out };
   const L = Math.max(3 * u, Math.round(Math.min(fr.w, fr.h) * 0.3));
   // White-hot while firing so the frame still reads on top of red burns
-  brackets(fr, u, Math.min(L, 8 * u), state.firing ? '#ff8f99' : '#ff0a1e');
+  brackets(fr, u, Math.min(L, 8 * u), blocked ? '#6f7b87' : state.firing ? '#ff8f99' : '#ff0a1e');
 
   if (charge > 0) {
     const segW = 2 * u, gap = u, n = 4;
@@ -205,17 +204,37 @@ export function drawCursor(t) {
   }
 
   // Readout beside a locked target, decoding in
-  if (cur.label && cur.key !== 'cell') {
+  // (re-decodes whenever the text changes)
+  const readout = blocked ? 'NO FIRE' : cur.key !== 'cell' ? cur.label : '';
+  if (readout !== cur.scrText) { cur.scrText = readout; cur.labelScr = readout ? makeScramble(readout.length, t) : null; }
+  if (readout) {
     const px = u;
-    const w = pixelTextWidth(cur.label, px);
+    const w = pixelTextWidth(readout, px);
     let lx = Math.round(fr.x + fr.w + 3 * u), ly = Math.round(fr.y);
     if (lx + w > grid.w - 4 * u) lx = Math.round(fr.x - 3 * u - w);
     if (ly < 2 * u) ly = Math.round(fr.y + fr.h - 7 * px);
-    drawPixelText(ctx, cur.label, lx, ly, px, function () { return '#ff0a1e'; }, cur.labelScr, t);
+    const col = blocked ? '#6f7b87' : '#ff0a1e';
+    drawPixelText(ctx, readout, lx, ly, px, function () { return col; }, cur.labelScr, t);
+  }
+  // Blocked: a small pixel X beside the pointer (light with a dark outline, since it always sits over the red eye)
+  if (blocked) {
+    const ox = Math.round(mx + 4 * u), oy = Math.round(my + 4 * u);
+    [['rgba(9,12,15,0.85)', 1], ['#c9d4de', 0]].forEach(function (pass) {
+      const o = pass[1];
+      ctx.fillStyle = pass[0];
+      for (let k = 0; k < 5; k++) {
+        ctx.fillRect(ox + k * u - o, oy + k * u - o, u + 2 * o, u + 2 * o);
+        ctx.fillRect(ox + (4 - k) * u - o, oy + k * u - o, u + 2 * o, u + 2 * o);
+      }
+    });
   }
 
   // The real pointer position, so aiming stays exact
-  const dot = Math.max(2, Math.round(2 * d));
+  // 4 CSS px with a 1 px dark outline, so it reads on the photo, the name and red burns alike
+  const dot = Math.max(4, Math.round(4 * d)), ol = Math.max(1, Math.round(d));
+  const dx = Math.round(mx - dot / 2), dy = Math.round(my - dot / 2);
+  ctx.fillStyle = 'rgba(9,12,15,0.85)';
+  ctx.fillRect(dx - ol, dy - ol, dot + 2 * ol, dot + 2 * ol);
   ctx.fillStyle = '#ffd6da';
-  ctx.fillRect(Math.round(mx - dot / 2), Math.round(my - dot / 2), dot, dot);
+  ctx.fillRect(dx, dy, dot, dot);
 }

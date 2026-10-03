@@ -65,6 +65,7 @@ window.addEventListener('pointerdown', function (e) {
   state.pointerDownAt = nowSec();
   if (state.booted) dismissHint();
 });
+export const POKE_MAX = 0.4;   // seconds: longer presses on the eye aren't pokes
 let pressedEl = null;
 let pressedEar = null, pressedEye = false;
 function releasePointer(e) {
@@ -72,7 +73,8 @@ function releasePointer(e) {
   pressedLabel = null;
   if (pressedEar && e && state.overEar === pressedEar) earPoke(pressedEar, nowSec());
   pressedEar = null;
-  if (pressedEye && e && state.overEye && !state.firedThisPress) eyePoke(nowSec());
+  // A click on the eye is a poke; a long hold there is a blocked shot (the cursor shows NO FIRE), not a poke
+  if (pressedEye && e && state.overEye && !state.firedThisPress && nowSec() - state.pointerDownAt < POKE_MAX) eyePoke(nowSec());
   pressedEye = false;
   if (pressedEl) {
     const over = e && e.target && e.target.closest ? e.target.closest('[data-click]') : null;
@@ -109,7 +111,7 @@ export function updateFireZone() {
   }
   state.inNoFire = inside;
   state.overEye = state.hasPointer && state.booted && inside && !state.overEar && !state.firing;
-  const wantFire = state.pointerDown && state.booted && (!inside || nowSec() - state.pointerDownAt > 0.3);
+  const wantFire = state.pointerDown && state.booted && !inside;   // never from the eye itself
   if (wantFire && !state.firing) startFiring();
   else if (!wantFire && state.firing) stopFiring();
 }
