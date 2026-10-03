@@ -113,12 +113,13 @@ function findTarget() {
   return { key: 'el:' + (hit.id || hit.dataset.click || hit.dataset.cursor), rect: domRect(hit), label: hit.dataset.cursor || '' };
 }
 
-// Frame a target: a little breathing room, sized up to whole grid squares, centred on the target
-// (snapping the position to the grid too pushed the frame off-centre)
-function frameFor(r) {
-  const C = grid.cell, pad = C * 0.25;
-  const w = Math.ceil((r.w + 2 * pad) / C) * C, h = Math.ceil((r.h + 2 * pad) / C) * C;
-  return { x: Math.round(r.x + r.w / 2 - w / 2), y: Math.round(r.y + r.h / 2 - h / 2), w: w, h: h };
+// Frame a target: the same clear space on every side, centred on it, so every lock looks alike
+// (snapping or rounding to the grid made the gap uneven, tight on thin words like ABOUT ME)
+// Thin targets (the vertical side labels) get at least four squares of width, or the bracket arms nearly meet across them.
+function frameFor(r, u) {
+  const pad = Math.round(Math.max(grid.cell * 0.75, 6 * u));
+  const w = Math.round(Math.max(r.w + 2 * pad, 4 * grid.cell)), h = Math.round(r.h + 2 * pad);
+  return { x: Math.round(r.x + r.w / 2 - w / 2), y: Math.round(r.y - pad), w: w, h: h };
 }
 
 function brackets(r, u, L, col) {
@@ -164,7 +165,7 @@ export function drawCursor(t) {
   const tg = findTarget();
   const cell = { x: grid.ox + ci * C, y: grid.oy + cj * C, w: C, h: C };
   const key = tg && tg.rect ? tg.key : 'cell';
-  const goal = tg && tg.rect ? frameFor(tg.rect) : cell;
+  const goal = tg && tg.rect ? frameFor(tg.rect, u) : cell;
   if (key !== cur.key) {
     // Fly between the old frame and the new one (rest -> lock, lock -> lock, lock -> rest)
     cur.from = cur.to ? cur.to : goal;

@@ -72,6 +72,29 @@ window.addEventListener('keydown', function (e) {
   if (e.key === 'Escape' && page.target !== 'hero') closeAbout();
 });
 
+// Two-finger sideways swipes move between the pages (About | Hero | Portfolio) instead of the
+// browser's back/forward gesture. Swipe left = one page left, swipe right = one page right.
+// One page per gesture: trackpads keep sending momentum events, so it re-arms only after a short pause.
+const swipe = { acc: 0, lastAt: 0, locked: false };
+window.addEventListener('wheel', function (e) {
+  const scale = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 400 : 1;
+  const dx = e.deltaX * scale, dy = e.deltaY * scale;
+  if (Math.abs(dx) <= Math.abs(dy)) return;   // vertical scrolling is left alone (About text, the carousel)
+  e.preventDefault();                          // no browser back/forward swipe
+  const now = performance.now();
+  if (now - swipe.lastAt > 250) { swipe.acc = 0; swipe.locked = false; }   // a new gesture
+  swipe.lastAt = now;
+  if (swipe.locked || page.moving) return;
+  swipe.acc += dx;
+  if (Math.abs(swipe.acc) < 60) return;
+  swipe.locked = true;
+  // With natural trackpad scrolling, fingers moving left give a positive deltaX
+  const left = swipe.acc > 0;
+  if (page.target === 'hero') { if (left) openAbout(); else openPortfolio(); }
+  else if (page.target === 'about' && !left) closeAbout();
+  else if (page.target === 'portfolio' && left) closeAbout();
+}, { passive: false });
+
 // Page transition progress, and the eye travelling to (or from) its parking spot
 export function updatePage(t) {
   if (page.moving) {

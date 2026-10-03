@@ -221,10 +221,13 @@ function drawTrack(t) {
   // px rounds up on some scalings (dpr 1.25 -> 3), so a fixed midpoint would clip the numbers
   const railX = Math.round((W - 23 * px) / 2) + 9 * px;
   const frac = ((car.pos % PN) + PN) % PN;
-  // When the loop wraps the pointer jumps; make the jump a glitch instead of a slide
-  if (trackState.lastFrac !== null && Math.abs(frac - trackState.lastFrac) > PN / 2) trackState.glitchUntil = t + 0.2;
-  trackState.lastFrac = frac;
-  const my = top + ((frac + 0.5) % PN) / PN * span;
+  // Pointer position along the track (0..PN). It only jumps when the loop really wraps between the last
+  // project and the first; make that jump a glitch instead of a slide. (Checking frac itself misfired on 01:
+  // the spring settling around 0 flips frac between 0 and almost PN every frame.)
+  const pf = (frac + 0.5) % PN;
+  if (trackState.lastFrac !== null && Math.abs(pf - trackState.lastFrac) > PN / 2) trackState.glitchUntil = t + 0.2;
+  trackState.lastFrac = pf;
+  const my = top + pf / PN * span;
   const reach = span / PN * 0.9;
   // Rail
   g.fillStyle = 'rgba(201,212,222,0.16)';

@@ -24,6 +24,8 @@
     --ink: #c9d4de; --ink-muted: #6f7b87; --name: #dfe6ec; --red: #ff0a1e;
   }
   *, *::before, *::after { box-sizing: inherit; }
+  /* overscroll-behavior-x stops the trackpad's back/forward swipe; the page handles sideways swipes itself */
+  html, body { overscroll-behavior-x: none; }
   html { height: 100%; scroll-padding-top: env(safe-area-inset-top, 0px); background: var(--bg-edge); }
   body {
     position: relative;
