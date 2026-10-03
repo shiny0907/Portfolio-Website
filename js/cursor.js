@@ -19,7 +19,7 @@ stage.appendChild(cv);
 const ctx = cv.getContext('2d');
 
 const cur = {
-  touch: false, lastDraw: 0, lastT: 0, frameMs: 16, slow: false, lastFrame: 0,
+  touch: false, lastDraw: 0, lastT: 0, lastTg: null, lastTgAt: -1, frameMs: 16, slow: false, lastFrame: 0,
   key: '', from: null, to: null, flyStart: -1,   // bracket frame and its fly-out tween
   label: '', labelScr: null, scrText: '',
   fireStart: 0, trail: [], lastCell: null
@@ -68,26 +68,29 @@ function eyeRect() {
   const r = Math.abs(e[0] - c[0]);
   return { x: c[0] - r, y: c[1] - r, w: 2 * r, h: 2 * r };
 }
-// Each ear's bounding box in its own pivot space, measured once, then projected every frame
-const earBoxes = new Map();
+// Each ear's outline: a sample of its real vertices in its own pivot space, measured once, then projected
+// every frame. (A box around the tilted triangle left a lot of empty frame.)
+const earPoints = new Map();
 const _m = new THREE.Matrix4(), _inv = new THREE.Matrix4();
 function earRect(ear) {
-  let box = earBoxes.get(ear);
-  if (!box) {
-    box = new THREE.Box3();
+  let pts = earPoints.get(ear);
+  if (!pts) {
+    pts = [];
     ear.pivot.updateMatrixWorld(true);
     _inv.copy(ear.pivot.matrixWorld).invert();
     ear.pivot.traverse(function (o) {
-      if (!o.geometry) return;
-      if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
-      box.union(o.geometry.boundingBox.clone().applyMatrix4(_m.multiplyMatrices(_inv, o.matrixWorld)));
+      if (!o.geometry || !o.geometry.attributes.position || !o.visible) return;
+      if (o.material && o.material.transparent && o.material.opacity < 0.2) return;   // faint glows don't count
+      const pos = o.geometry.attributes.position;
+      _m.multiplyMatrices(_inv, o.matrixWorld);
+      const step = Math.max(1, Math.floor(pos.count / 40));
+      for (let k = 0; k < pos.count; k += step) pts.push(new THREE.Vector3().fromBufferAttribute(pos, k).applyMatrix4(_m));
     });
-    earBoxes.set(ear, box);
+    earPoints.set(ear, pts);
   }
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
-  for (let k = 0; k < 8; k++) {
-    _v.set(k & 1 ? box.max.x : box.min.x, k & 2 ? box.max.y : box.min.y, k & 4 ? box.max.z : box.min.z).applyMatrix4(ear.pivot.matrixWorld);
-    const p = toGrid(_v);
+  for (let k = 0; k < pts.length; k++) {
+    const p = toGrid(_v.copy(pts[k]).applyMatrix4(ear.pivot.matrixWorld));
     x0 = Math.min(x0, p[0]); y0 = Math.min(y0, p[1]); x1 = Math.max(x1, p[0]); y1 = Math.max(y1, p[1]);
   }
   return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
@@ -99,7 +102,7 @@ function findTarget() {
   if (state.firing) return null;
   // Text targets already say what they are, so the readout says what clicking does
   if (hoveredLabel) return { key: 'lab:' + hoveredLabel.text, rect: labelBounds(hoveredLabel), side: true, label: hoveredLabel.text === 'BACK' ? 'EXIT' : 'OPEN' };
-  if (state.overEar) return { key: 'ear' + state.overEar.side, rect: earRect(state.overEar), label: state.overEar.side < 0 ? 'EAR L' : 'EAR R' };
+  if (state.overEar) return { key: 'ear' + state.overEar.side, rect: earRect(state.overEar), tight: true, label: state.overEar.side < 0 ? 'EAR L' : 'EAR R' };
   if (state.overEye) return { key: 'eye', rect: eyeRect(), label: 'EYE' };
   const el = document.elementFromPoint(state.clientX, state.clientY);
   const hit = el && el.closest ? el.closest('[data-click], [data-cursor]') : null;
@@ -116,11 +119,11 @@ function findTarget() {
 }
 
 // Frame a target, centred on it. Most targets get a little room, sized up to whole grid squares.
-// The side labels are one letter wide, so they get an exact half-square gap instead (rounding made it uneven).
-function frameFor(r, side) {
+// The side labels (one letter wide) and the ears (traced from their outline) get an exact gap instead.
+function frameFor(r, side, tight) {
   const C = grid.cell;
-  if (side) {
-    const p = Math.round(C * 0.5);
+  if (side || tight) {
+    const p = Math.round(C * (side ? 0.5 : 0.25));   // exact gap: half a square for the labels, a quarter for the ears
     return { x: Math.round(r.x - p), y: Math.round(r.y - p), w: Math.round(r.w + 2 * p), h: Math.round(r.h + 2 * p) };
   }
   const pad = C * 0.25;
@@ -186,10 +189,13 @@ export function drawCursor(t) {
   ctx.globalAlpha = 1;
 
   // Resting frame: the grid square under the pointer (jumps in whole squares). Locked: the target, snapped out to the grid.
-  const tg = findTarget();
+  // A lock holds for a moment after the pointer slips off a target's edge, so edges don't flicker the frame
+  let tg = findTarget();
+  if (tg) { cur.lastTg = tg; cur.lastTgAt = t; }
+  else if (cur.lastTg && t - cur.lastTgAt < 0.15 && !state.firing) tg = cur.lastTg;
   const cell = { x: grid.ox + ci * C, y: grid.oy + cj * C, w: C, h: C };
   const key = tg && tg.rect ? tg.key : 'cell';
-  const goal = tg && tg.rect ? frameFor(tg.rect, tg.side) : cell;
+  const goal = tg && tg.rect ? frameFor(tg.rect, tg.side, tg.tight) : cell;
   if (key !== cur.key) {
     // Fly between the old frame and the new one (rest -> lock, lock -> lock, lock -> rest)
     cur.from = cur.to ? cur.to : goal;
