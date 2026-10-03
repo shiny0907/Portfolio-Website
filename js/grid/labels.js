@@ -92,6 +92,26 @@ function placeLabels() {
   }
 }
 
+// Hover pushes letters outward in a staggered wave. Returns how far (0..1 eased) and the pixel offset.
+function hoverPush(g) {
+  const lab = g.label;
+  const local = clamp(lab.h * 1.6 - (g.index / lab.text.length) * 0.6, 0, 1);
+  const e = local * local * (3 - 2 * local);
+  const off = e * labelPx * 2.5;
+  return { e: e, dx: Math.round(g.dirX * off), dy: Math.round(g.dirY * off) };
+}
+// Where a label's letters are actually drawn right now (including the hover push), in grid-canvas pixels
+export function labelBounds(lab) {
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  labelGlyphs.forEach(function (g) {
+    if (g.label !== lab || !g.rows) return;
+    const p = hoverPush(g);
+    x0 = Math.min(x0, g.x + p.dx); y0 = Math.min(y0, g.y + p.dy);
+    x1 = Math.max(x1, g.x + p.dx + g.w); y1 = Math.max(y1, g.y + p.dy + 7 * labelPx);
+  });
+  return x0 < x1 ? { x: x0, y: y0, w: x1 - x0, h: y1 - y0 } : null;
+}
+
 // Hover detection, the selection rail, then the letters themselves
 export function drawLabels(ctx, t, dt) {
   placeLabels();
@@ -149,12 +169,10 @@ export function drawLabels(ctx, t, dt) {
     const st = scrambleState(g.scr, t, g.rows[0].length);
     if (st === 'hidden') continue;
     const draw = st || g.rows;
-    // Hover pushes letters outward in a staggered wave, brightens them, and adds a red glitch shadow
+    // Hover pushes letters outward, brightens them, and adds a red glitch shadow
     const lab = g.label;
-    const local = clamp(lab.h * 1.6 - (g.index / lab.text.length) * 0.6, 0, 1);
-    const e = local * local * (3 - 2 * local);
-    const off = e * lp * 2.5;
-    const gx = g.x + Math.round(g.dirX * off), gy = g.y + Math.round(g.dirY * off);
+    const push = hoverPush(g), e = push.e;
+    const gx = g.x + push.dx, gy = g.y + push.dy;
     if (e > 0.05) {
       const jit = lab.hovered && !reduceMotion && Math.random() < 0.08 ? (Math.random() < 0.5 ? -lp : lp) : 0;
       const sx = gx + Math.round(g.dirX * lp) + jit, sy = gy + Math.round(g.dirY * lp);

@@ -5,7 +5,7 @@ import { makeScramble, drawPixelText, pixelTextWidth } from './pixel-font.js';
 import { state } from './state.js';
 import { page } from './pages.js';
 import { grid } from './grid/grid.js';
-import { hoveredLabel, labelGlyphs, labelPx } from './grid/labels.js';
+import { hoveredLabel, labelBounds } from './grid/labels.js';
 import { rig } from './eye/eyeball.js';
 import { trackRowAt } from './portfolio.js';
 
@@ -89,22 +89,13 @@ function earRect(ear) {
   }
   return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
 }
-function labelRect(lab) {
-  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
-  labelGlyphs.forEach(function (g) {
-    if (g.label !== lab || !g.rows) return;
-    x0 = Math.min(x0, g.x); y0 = Math.min(y0, g.y);
-    x1 = Math.max(x1, g.x + g.w); y1 = Math.max(y1, g.y + 7 * labelPx);
-  });
-  return x0 < x1 ? { x: x0, y: y0, w: x1 - x0, h: y1 - y0 } : null;
-}
 const two = function (n) { return (n < 10 ? '0' : '') + n; };
 
 // What the pointer is over right now: { key, rect, label } or null
 function findTarget() {
   if (state.firing) return null;
   // Text targets already say what they are, so the readout says what clicking does
-  if (hoveredLabel) return { key: 'lab:' + hoveredLabel.text, rect: labelRect(hoveredLabel), label: hoveredLabel.text === 'BACK' ? 'EXIT' : 'OPEN' };
+  if (hoveredLabel) return { key: 'lab:' + hoveredLabel.text, rect: labelBounds(hoveredLabel), label: hoveredLabel.text === 'BACK' ? 'EXIT' : 'OPEN' };
   if (state.overEar) return { key: 'ear' + state.overEar.side, rect: earRect(state.overEar), label: state.overEar.side < 0 ? 'EAR L' : 'EAR R' };
   if (state.overEye) return { key: 'eye', rect: eyeRect(), label: 'EYE' };
   const el = document.elementFromPoint(state.clientX, state.clientY);
@@ -121,12 +112,12 @@ function findTarget() {
   return { key: 'el:' + (hit.id || hit.dataset.click || hit.dataset.cursor), rect: domRect(hit), label: hit.dataset.cursor || '' };
 }
 
-// Grow a rect outward to whole grid squares (with a little breathing room)
-function snapOut(r) {
+// Frame a target: a little breathing room, sized up to whole grid squares, centred on the target
+// (snapping the position to the grid too pushed the frame off-centre)
+function frameFor(r) {
   const C = grid.cell, pad = C * 0.25;
-  const x0 = grid.ox + Math.floor((r.x - pad - grid.ox) / C) * C, y0 = grid.oy + Math.floor((r.y - pad - grid.oy) / C) * C;
-  const x1 = grid.ox + Math.ceil((r.x + r.w + pad - grid.ox) / C) * C, y1 = grid.oy + Math.ceil((r.y + r.h + pad - grid.oy) / C) * C;
-  return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+  const w = Math.ceil((r.w + 2 * pad) / C) * C, h = Math.ceil((r.h + 2 * pad) / C) * C;
+  return { x: Math.round(r.x + r.w / 2 - w / 2), y: Math.round(r.y + r.h / 2 - h / 2), w: w, h: h };
 }
 
 function brackets(r, u, L, col) {
@@ -172,7 +163,7 @@ export function drawCursor(t) {
   const tg = findTarget();
   const cell = { x: grid.ox + ci * C, y: grid.oy + cj * C, w: C, h: C };
   const key = tg && tg.rect ? tg.key : 'cell';
-  const goal = tg && tg.rect ? snapOut(tg.rect) : cell;
+  const goal = tg && tg.rect ? frameFor(tg.rect) : cell;
   if (key !== cur.key) {
     // Fly between the old frame and the new one (rest -> lock, lock -> lock, lock -> rest)
     cur.from = cur.to ? cur.to : goal;
