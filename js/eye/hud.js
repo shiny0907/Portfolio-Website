@@ -64,22 +64,5 @@ export function updateHud(t, dt, glowLevel) {
   for (let i = 0; i < hudMats.length; i++) hudMats[i].opacity = hudMats[i].userData.base * hudIn;
   arcMat.opacity *= 1 + 0.7 * anger;
   aura.material.opacity = 0.35 * hudIn * (0.6 + 0.4 * glowLevel);
-  // Outer brackets swing to face wherever the eye is looking (the cursor, or its idle gaze)
-  if (Math.hypot(state.yaw, state.pitch) > 0.04) {
-    // The two brackets are mirror images, so aim whichever one is closer (never spin more than 90 degrees)
-    let diff = Math.atan2(state.pitch, state.yaw) - state.bracketRot;
-    diff = Math.atan2(Math.sin(diff), Math.cos(diff));
-    if (diff > Math.PI / 2) diff -= Math.PI;
-    if (diff < -Math.PI / 2) diff += Math.PI;
-    const bh = dt / 2;
-    for (let s = 0; s < 2; s++) {
-      state.bracketVel += (diff * 45 - state.bracketVel * 10) * bh;
-      state.bracketRot += state.bracketVel * bh;
-      diff -= state.bracketVel * bh;
-    }
-  } else {
-    state.bracketVel *= Math.exp(-dt * 8);
-    state.bracketRot += state.bracketVel * dt;
-  }
-  hudBrackets.rotation.z = state.bracketRot;
+  // The gray bracket arcs stay put at 3 and 9 o'clock, framing the side labels (they used to turn with the gaze)
 }

@@ -1,7 +1,9 @@
 // Where the eye looks: cursor tracking, idle behaviour, the servo spring, and the gaze point on screen
-import { camera, reduceMotion, TAU, clamp, lerp, camBase } from './core.js';
+import { stage, camera, reduceMotion, TAU, clamp, lerp, camBase, nowSec } from './core.js';
 import { state } from './state.js';
+import { page } from './pages.js';
 import { grid } from './grid/grid.js';
+import { centerCardPoint } from './portfolio.js';
 import { rig, pitchGroup } from './eye/eyeball.js';
 import { earsPerk } from './eye/ears.js';
 
@@ -13,8 +15,9 @@ const hit = new THREE.Vector3();
 const MAX_YAW = 1.4, MAX_PITCH = 0.8;
 const gazeO = new THREE.Vector3(), gazeD = new THREE.Vector3();
 
-function aimAtCursor() {
-  raycaster.setFromCamera(state.mouse, camera);
+// Aim at a point given in normalised device coordinates (the cursor, or anything else on screen)
+function aimAt(ndc) {
+  raycaster.setFromCamera(ndc, camera);
   if (raycaster.ray.intersectPlane(lookPlane, hit)) {
     const dx = hit.x - rig.position.x;
     const dy = hit.y - rig.position.y;
@@ -24,7 +27,41 @@ function aimAtCursor() {
   }
 }
 
+// ---------- Glances: look at something for a moment, then the servo eases back to the cursor ----------
+// target is a screen point in CSS pixels ({ x, y }) or a fixed angle ({ yaw, pitch }).
+// Points are re-aimed every frame, so a glance stays on target while the eye travels. Firing always wins.
+const glance = { until: 0, point: false, x: 0, y: 0, yaw: 0, pitch: 0 };
+const glanceNdc = new THREE.Vector2();
+export function glanceAt(target, dur) {
+  if (state.firing || !state.booted) return;
+  glance.until = nowSec() + dur;
+  glance.point = !('yaw' in target);
+  if (glance.point) { glance.x = target.x; glance.y = target.y; } else { glance.yaw = target.yaw; glance.pitch = target.pitch; }
+}
+export function cancelGlance() { glance.until = 0; }
+function aimGlance() {
+  if (!glance.point) { state.tYaw = glance.yaw; state.tPitch = glance.pitch; return; }
+  const r = stage.getBoundingClientRect();
+  if (!r.width || !r.height) return;
+  glanceNdc.set((glance.x - r.left) / r.width * 2 - 1, -(glance.y - r.top) / r.height * 2 + 1);
+  aimAt(glanceNdc);
+}
+
+// Idle on the Portfolio page: study the centre card with small saccades instead of wandering
+const idleNdc = new THREE.Vector2();
+function idlePortfolio(t) {
+  if (t < state.idleNext) return;
+  const p = centerCardPoint();
+  const r = stage.getBoundingClientRect();
+  if (!p || !r.width) return;
+  const x = p.x + (Math.random() * 2 - 1) * p.w * 0.3, y = p.y + (Math.random() * 2 - 1) * p.h * 0.3;
+  idleNdc.set((x - r.left) / r.width * 2 - 1, -(y - r.top) / r.height * 2 + 1);
+  aimAt(idleNdc);
+  state.idleNext = t + (0.6 + Math.random() * 1.4) * (reduceMotion ? 2 : 1);
+}
+
 function idleBehaviour(t) {
+  if (page.target === 'portfolio' && !page.moving) { state.sweep = null; idlePortfolio(t); return; }
   if (state.sweep) {
     const sw = state.sweep;
     const p = (t - sw.start) / sw.dur;
@@ -63,16 +100,19 @@ export function updateGaze(t, dt) {
   state.anger += ((state.firing ? 1 : 0) - state.anger) * Math.min(1, dt * (state.firing ? 14 : 4));
   if (tracking) {
     if (state.mode !== 'track') { state.mode = 'track'; state.sweep = null; earsPerk(); }
-    aimAtCursor();
-    if (t < state.glanceUntil) { state.tYaw = state.glanceYaw; state.tPitch = state.glancePitch; }
+    aimAt(state.mouse);
   } else {
     if (state.mode !== 'idle') { state.mode = 'idle'; state.idleNext = t + 0.5; }
     if (state.booted) idleBehaviour(t);
   }
+  // A glance overrides the cursor or the idle wandering for a moment
+  if (state.firing) glance.until = 0;
+  const glancing = t < glance.until;
+  if (glancing) { state.sweep = null; aimGlance(); }
 
   // Servo spring, slightly underdamped so it overshoots and settles like a motor
-  const k = state.firing ? 150 : tracking ? 95 : state.sweep ? 60 : 170;
-  const c = state.firing ? 19 : tracking ? 14 : state.sweep ? 15 : 20;
+  const k = state.firing ? 150 : (tracking || glancing) ? 95 : state.sweep ? 60 : 170;
+  const c = state.firing ? 19 : (tracking || glancing) ? 14 : state.sweep ? 15 : 20;
   const h = dt / 2;
   for (let i = 0; i < 2; i++) {
     state.vyaw += ((state.tYaw - state.yaw) * k - state.vyaw * c) * h;

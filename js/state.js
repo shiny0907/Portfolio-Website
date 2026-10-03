@@ -45,9 +45,8 @@ export const state = {
   aperture: 0.0, apertureTarget: 0.045,
   glitchUntil: 0, glitchValue: 1, glitchNextStep: 0, booted: false,
   beatPulse: 0, earNext: 5, firing: false, anger: 0, beam: 0,
-  prevVyaw: 0, prevVpitch: 0, accYaw: 0, accPitch: 0, pointerDown: false, pointerDownAt: 0, overEye: false, overEar: null, recoil: 0, vRecoil: 0, shakeUntil: 0, annoy: 0, pokes: [], glanceUntil: 0, glanceYaw: 0, glancePitch: 0, firedThisPress: false, rigX: 0, vRigX: 0, travel: 0, impactX: null, impactY: null, gazeX: -1e5, gazeY: -1e5,
-  jitY: 0, jitP: 0, jitTY: 0, jitTP: 0, jitNext: 0,
-  bracketRot: 0, bracketVel: 0
+  prevVyaw: 0, prevVpitch: 0, accYaw: 0, accPitch: 0, pointerDown: false, clientX: 0, inNoFire: false, pointerDownAt: 0, overEye: false, overEar: null, recoil: 0, vRecoil: 0, shakeUntil: 0, annoy: 0, pokes: [], firedThisPress: false, rigX: 0, vRigX: 0, travel: 0, impactX: null, impactY: null, gazeX: -1e5, gazeY: -1e5,
+  jitY: 0, jitP: 0, jitTY: 0, jitTP: 0, jitNext: 0
 };
 
 // Rings that tick on a clock: inner lens parts every half second, outer HUD every second.

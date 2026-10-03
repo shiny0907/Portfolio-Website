@@ -17,6 +17,8 @@ import { updateGaze, updateGazePoint } from './gaze.js';
 import { updateAbout } from './about.js';
 import { updatePortfolio } from './portfolio.js';
 import { runLoader } from './loader.js';
+import { drawCursor } from './cursor.js';
+import { updateSound } from './sound.js';
 
 // The rings that step on the beat
 beatRings[0].obj = tickGroup;
@@ -58,6 +60,8 @@ function frame() {
   updatePortfolio(t, dt);
 
   renderFrame(t);
+  drawCursor(t);
+  updateSound();
 }
 
 function startScene() {

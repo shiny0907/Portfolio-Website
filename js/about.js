@@ -5,6 +5,8 @@ import { page } from './pages.js';
 import { grid } from './grid/grid.js';
 import { labelGeo, LABEL_Z } from './grid/labels.js';
 import { EYE_PARK_X } from './layout.js';
+import { state } from './state.js';
+import { glanceAt } from './gaze.js';
 
 export const aboutEl = document.getElementById('about');
 
@@ -147,6 +149,23 @@ export function updateAbout(t) {
   const W = stage.clientWidth || window.innerWidth;
   aboutEl.style.transform = 'translateX(' + (page.p * W - W).toFixed(1) + 'px)';
   drawHeadings(t);
+  photoGlance(t);
+}
+
+// Hovering the photo makes the eye glance at it: once per visit to the photo, with a cooldown so it never stares
+const photoLook = { over: false, next: 0 };
+function photoGlance(t) {
+  let over = false;
+  if (page.target === 'about' && !page.moving && state.hasPointer && photo.visible && photo.w) {
+    const sr = stage.getBoundingClientRect(), dpr = grid.dpr;
+    const x0 = sr.left + photo.x / dpr, y0 = sr.top + photo.y / dpr;
+    over = state.clientX >= x0 && state.clientX <= x0 + photo.w / dpr && state.clientY >= y0 && state.clientY <= y0 + photo.h / dpr;
+    if (over && !photoLook.over && t >= photoLook.next) {
+      glanceAt({ x: x0 + photo.w / dpr / 2, y: y0 + photo.h / dpr / 2 }, 1.0);
+      photoLook.next = t + 2;
+    }
+  }
+  photoLook.over = over;
 }
 
 // The About page is opening: start the photo reveal and scroll back to the top

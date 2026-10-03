@@ -4,6 +4,7 @@ import { makeScramble, glitchRun, drawPixelText, pixelTextWidth, LABEL_COLOR } f
 import { state } from '../state.js';
 import { grid } from './grid.js';
 import { SIDE_LABELS, labelGlyphs, labelPx } from './labels.js';
+import { sfx } from '../sound.js';
 
 const CLOCK_APPEAR = reduceMotion ? 0 : 1.1;
 export const CORNER_LEFT = 'UI/UX DESIGNER';
@@ -41,6 +42,7 @@ export function drawCorners(ctx, t) {
       const items = labelGlyphs.filter(function (g) { return g.label === lab && g.rows; });
       glitchRun(items.map(function (g) { return g.scr; }), t, 0, items.length);
     }
+    if (Math.random() < 0.3) sfx('blip');   // only some of them make a sound
     textGlitchNext = t + 2 + Math.random() * 3;
   }
 

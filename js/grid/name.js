@@ -6,6 +6,7 @@ import { page } from '../pages.js';
 import { grid, KEY, projectToGrid } from './grid.js';
 import { LABEL_Z, labelGlyphs } from './labels.js';
 import { scrLeft, scrRight } from './corners.js';
+import { sfx } from '../sound.js';
 
 const NAME_TEXT = 'SHINING YU';
 const NAME_ROWS = 7, LETTER_GAP = 1, WORD_GAP = 3;
@@ -149,6 +150,7 @@ function startBreach(t) {
   breach.subText = breach.count > 1 ? 'BREACH ' + (breach.count < 10 ? '0' : '') + breach.count : '';
   breach.sub = breach.subText ? messageScramble(breach.subText.length, t + B_GLITCH + 0.35, t + B_OUT, t + B_REBUILD) : null;
   state.glitchUntil = Math.max(state.glitchUntil, t + B_GLITCH);   // glow flicker
+  sfx('breach');
   if (reduceMotion) return;
   // Every bit of system text breaks up, and the HUD rings jolt
   scrambleAll(scrLeft, t, 0.6);

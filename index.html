@@ -23,6 +23,8 @@
 <link rel="modulepreload" href="js/portfolio.js">
 <link rel="modulepreload" href="js/projects.js">
 <link rel="modulepreload" href="js/loader.js">
+<link rel="modulepreload" href="js/cursor.js">
+<link rel="modulepreload" href="js/sound.js">
 <link rel="modulepreload" href="js/grid/grid.js">
 <link rel="modulepreload" href="js/grid/name.js">
 <link rel="modulepreload" href="js/grid/labels.js">
@@ -42,6 +44,7 @@
 <div class="loader" id="loader" role="status" aria-label="Loading">
   <canvas class="loader-bg" id="loaderBg" aria-hidden="true"></canvas>
 </div>
+<button class="sound-toggle" id="soundToggle" type="button" aria-pressed="false" aria-label="Sound" data-nofire data-cursor="SOUND OFF"><canvas aria-hidden="true"></canvas></button>
 <p class="hint" id="hint">Move your cursor around</p>
 <section class="about" id="about" aria-label="About me" aria-hidden="true">
   <div class="about-inner">
@@ -93,7 +96,7 @@
       <p class="pf-meta" id="pfMeta"></p>
       <p class="pf-desc" id="pfDesc"></p>
       <div class="tags" id="pfTags"></div>
-      <button class="pf-case" type="button" data-click="case">VIEW CASE STUDY</button>
+      <button class="pf-case" type="button" data-click="case" data-cursor="OPEN">VIEW CASE STUDY</button>
       <p class="pf-note" id="pfNote"></p>
     </div>
     <div class="pf-track" id="pfTrack" data-click="track" aria-hidden="true"><canvas id="pfTrackCv"></canvas></div>

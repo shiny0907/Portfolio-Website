@@ -6,6 +6,7 @@ import { grid } from './grid/grid.js';
 import { labelGeo, LABEL_Z } from './grid/labels.js';
 import { EYE_PARK_X } from './layout.js';
 import { PROJECTS } from './projects.js';
+import { glanceAt } from './gaze.js';
 
 export const pfEl = document.getElementById('pf');
 
@@ -189,7 +190,15 @@ export function updatePortfolio(t, dt) {
   positionCards();
   pfCards.forEach(function (c) { showCard(c, 1); });
   const cur = ((Math.round(car.pos) % PN) + PN) % PN;
-  if (cur !== car.cur) { car.cur = cur; pfSetDetails(cur, t); }
+  if (cur !== car.cur) {
+    // A new project lands in the centre: the eye glances over to present it (not while the page is still arriving)
+    if (car.cur >= 0 && !page.moving && page.target === 'portfolio') {
+      const p = centerCardPoint();
+      if (p) glanceAt(p, 0.8);
+    }
+    car.cur = cur;
+    pfSetDetails(cur, t);
+  }
   drawTrack(t);
   drawPfTitle(t);
 }
@@ -250,6 +259,23 @@ function drawTrack(t) {
     for (let r = 0; r < 4; r++) g.fillRect(ax + r * px, jy - (3 - r) * px, px, (3 - r) * 2 * px + px);
     g.fillRect(ax + 4 * px, jy, railX - ax - 4 * px + 2 * px, u);
   }
+}
+// Centre slot of the carousel in CSS pixels, where the current card sits
+export function centerCardPoint() {
+  if (page.p > -0.5) return null;
+  const r = pfCarousel.getBoundingClientRect();
+  if (!r.width) return null;
+  return { x: r.left + r.width / 2, y: r.top + r.height / 2, w: car.w0, h: car.h0 };
+}
+// The numbered row of the track under a client point, as a CSS-pixel rect (for the cursor's target lock)
+export function trackRowAt(clientY) {
+  const r = pfTrackCv.getBoundingClientRect();
+  if (!r.height) return null;
+  const k = trackIndexAt(clientY);
+  const px = Math.max(1, Math.round(2 * grid.dpr)) / grid.dpr;
+  const top = 4 * px, span = r.height - 8 * px;
+  const y = r.top + top + (k + 0.5) / PN * span;
+  return { k: k, x: r.left, y: y - 6 * px, w: r.width, h: 12 * px };
 }
 function trackIndexAt(clientY) {
   const r = pfTrackCv.getBoundingClientRect();

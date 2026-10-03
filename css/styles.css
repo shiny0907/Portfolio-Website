@@ -37,6 +37,12 @@
   #stage { position: relative; width: 100%; height: 100%; }
   #stage canvas { position: absolute; top: 0; left: 0; display: block; width: 100%; height: 100%; touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
   #stage canvas.grid { pointer-events: none; }
+  /* Custom cursor: drawn on its own top layer. The system cursor is hidden only while JS is actually
+     drawing it (the cursor-on class), and only for mice and trackpads, so there's always a visible cursor. */
+  #stage canvas.cursor { pointer-events: none; z-index: 50; }
+  @media (pointer: fine) {
+    html.cursor-on, html.cursor-on * { cursor: none !important; }
+  }
   .hint {
     position: absolute;
     left: 50%;
@@ -52,6 +58,15 @@
     white-space: nowrap;
   }
   .hint { z-index: 3; }
+  /* Sound toggle: a small pixel speaker in the bottom-left corner, lined up with the corner texts */
+  .sound-toggle {
+    position: fixed; left: var(--edge); bottom: calc(var(--edge) + env(safe-area-inset-bottom, 0px)); z-index: 4;
+    display: grid; place-items: center;
+    margin: 0; padding: 8px; margin-left: -8px; margin-bottom: -8px;
+    background: none; border: 0; cursor: pointer;
+  }
+  .sound-toggle canvas { display: block; image-rendering: pixelated; }
+  .sound-toggle:focus-visible { outline: 1px solid var(--red); outline-offset: 2px; }
   /* ---------- About page (left of the hero) ---------- */
   .about {
     position: fixed; top: 0; left: 0; bottom: 0;

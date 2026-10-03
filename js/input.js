@@ -18,6 +18,7 @@ function dismissHint() {
 }
 
 function setPointer(e) {
+  state.clientX = e.clientX;
   state.clientY = e.clientY;
   const rect = renderer.domElement.getBoundingClientRect();
   if (!rect.width || !rect.height) return;
@@ -47,6 +48,7 @@ window.addEventListener('pointermove', function (e) {
 window.addEventListener('pointerdown', function (e) {
   setPointer(e);
   if (e.button !== 0) return;
+  if (e.target && e.target.closest && e.target.closest('[data-nofire]')) return;   // UI buttons (sound toggle) never fire
   if (e.target === renderer.domElement) {
     try { renderer.domElement.setPointerCapture(e.pointerId); } catch (err) { /* capture is optional */ }
   }
@@ -105,6 +107,7 @@ export function updateFireZone() {
       if (raycaster.intersectObject(ears[i].pivot, true).length) { state.overEar = ears[i]; break; }
     }
   }
+  state.inNoFire = inside;
   state.overEye = state.hasPointer && state.booted && inside && !state.overEar && !state.firing;
   const wantFire = state.pointerDown && state.booted && (!inside || nowSec() - state.pointerDownAt > 0.3);
   if (wantFire && !state.firing) startFiring();

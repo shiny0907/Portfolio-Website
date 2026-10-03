@@ -7,6 +7,7 @@ import { pfEl } from './portfolio.js';
 import { rig } from './eye/eyeball.js';
 import { hud, aura } from './eye/hud.js';
 import { EYE_PARK_X } from './layout.js';
+import { sfx } from './sound.js';
 
 // ABOUT ME opens the About page and becomes BACK; BACK returns to the hero.
 // PORTFOLIO still just announces the click ('hero:navigate') until that page exists.
@@ -30,6 +31,7 @@ function goPage(name) {
   page.to = name === 'about' ? 1 : name === 'portfolio' ? -1 : 0;
   page.start = t;
   page.moving = true;
+  sfx('whoosh');
   // A fresh tear pattern each time: each row's edge sits 0 to 2 squares ahead, varying smoothly
   let v = Math.random() * 3;
   for (let j = 0; j < 64; j++) { v = clamp(v + (Math.random() - 0.5) * 1.6, 0, 2.99); page.jag[j] = Math.floor(v); }

@@ -4,6 +4,8 @@ import { glitchRun } from './pixel-font.js';
 import { grid } from './grid/grid.js';
 import { scrLeft, scrRight, CORNER_LEFT, CLOCK_PLACE } from './grid/corners.js';
 import { ears, earTwitch } from './eye/ears.js';
+import { glanceAt, cancelGlance } from './gaze.js';
+import { sfx } from './sound.js';
 
 // ---------- Click reactions ----------
 // Clicking the eye plays one of five reactions (never the same one twice in a row).
@@ -27,11 +29,13 @@ export function eyePoke(t) {
     state.shakeUntil = t + 0.55;
     state.vRecoil -= 2.5;
     state.react = null;
+    sfx('annoyed');
     return;
   }
   const type = pickFrom(EYE_REACTIONS, lastEyeReaction);
   lastEyeReaction = type;
   state.react = { type: type, start: t, dur: EYE_REACT_DUR[type], done: {} };
+  sfx(type);
   if (type === 'flinch') {
     // Recoils back into the screen, pupil snaps shut, double blink, ears flatten
     state.vRecoil -= 4.5;
@@ -100,10 +104,10 @@ export function earPoke(ear, t) {
   if (!state.booted) return;
   const type = pickFrom(EAR_REACTIONS, ear.lastReaction);
   ear.lastReaction = type;
+  sfx('ear-' + type);
   const other = ears.find(function (e2) { return e2 !== ear; });
-  state.glanceUntil = t + 0.7;
-  state.glanceYaw = ear.side * 0.55;
-  state.glancePitch = 0.5;
+  const look = { yaw: ear.side * 0.55, pitch: 0.5 };
+  glanceAt(look, 0.7);
   if (type === 'flick') {
     // Hard flick back, the other ear twitches a beat later
     ear.vfold -= 15;
@@ -116,13 +120,13 @@ export function earPoke(ear, t) {
     // Annoyed: that ear pins flat while the eye squints and glares at it
     ear.flatUntil = t + 0.9;
     state.glareUntil = t + 0.9;
-    state.glanceUntil = t + 0.9;
+    glanceAt(look, 0.9);
   } else if (type === 'shake') {
     // Shakes it off like a cat: both ears flutter and the head gives a quick shake
     ears.forEach(function (e2, i) {
       e2.wiggles = [0, 0.06, 0.12, 0.18, 0.24, 0.3].map(function (d, j) { return { at: t + d + i * 0.03, amt: j % 2 ? 7 : -7 }; });
     });
     state.shakeUntil = t + 0.4;
-    state.glanceUntil = 0;
+    cancelGlance();
   }
 }
