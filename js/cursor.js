@@ -96,7 +96,7 @@ const two = function (n) { return (n < 10 ? '0' : '') + n; };
 function findTarget() {
   if (state.firing) return null;
   // Text targets already say what they are, so the readout says what clicking does
-  if (hoveredLabel) return { key: 'lab:' + hoveredLabel.text, rect: labelBounds(hoveredLabel), label: hoveredLabel.text === 'BACK' ? 'EXIT' : 'OPEN' };
+  if (hoveredLabel) return { key: 'lab:' + hoveredLabel.text, rect: labelBounds(hoveredLabel), side: true, label: hoveredLabel.text === 'BACK' ? 'EXIT' : 'OPEN' };
   if (state.overEar) return { key: 'ear' + state.overEar.side, rect: earRect(state.overEar), label: state.overEar.side < 0 ? 'EAR L' : 'EAR R' };
   if (state.overEye) return { key: 'eye', rect: eyeRect(), label: 'EYE' };
   const el = document.elementFromPoint(state.clientX, state.clientY);
@@ -113,13 +113,17 @@ function findTarget() {
   return { key: 'el:' + (hit.id || hit.dataset.click || hit.dataset.cursor), rect: domRect(hit), label: hit.dataset.cursor || '' };
 }
 
-// Frame a target: the same clear space on every side, centred on it, so every lock looks alike
-// (snapping or rounding to the grid made the gap uneven, tight on thin words like ABOUT ME)
-// Thin targets (the vertical side labels) get at least four squares of width, or the bracket arms nearly meet across them.
-function frameFor(r, u) {
-  const pad = Math.round(Math.max(grid.cell * 0.75, 6 * u));
-  const w = Math.round(Math.max(r.w + 2 * pad, 4 * grid.cell)), h = Math.round(r.h + 2 * pad);
-  return { x: Math.round(r.x + r.w / 2 - w / 2), y: Math.round(r.y - pad), w: w, h: h };
+// Frame a target, centred on it. Most targets get a little room, sized up to whole grid squares.
+// The side labels are one letter wide, so they get an exact half-square gap instead (rounding made it uneven).
+function frameFor(r, side) {
+  const C = grid.cell;
+  if (side) {
+    const p = Math.round(C * 0.5);
+    return { x: Math.round(r.x - p), y: Math.round(r.y - p), w: Math.round(r.w + 2 * p), h: Math.round(r.h + 2 * p) };
+  }
+  const pad = C * 0.25;
+  const w = Math.ceil((r.w + 2 * pad) / C) * C, h = Math.ceil((r.h + 2 * pad) / C) * C;
+  return { x: Math.round(r.x + r.w / 2 - w / 2), y: Math.round(r.y + r.h / 2 - h / 2), w: w, h: h };
 }
 
 function brackets(r, u, L, col) {
@@ -165,7 +169,7 @@ export function drawCursor(t) {
   const tg = findTarget();
   const cell = { x: grid.ox + ci * C, y: grid.oy + cj * C, w: C, h: C };
   const key = tg && tg.rect ? tg.key : 'cell';
-  const goal = tg && tg.rect ? frameFor(tg.rect, u) : cell;
+  const goal = tg && tg.rect ? frameFor(tg.rect, tg.side) : cell;
   if (key !== cur.key) {
     // Fly between the old frame and the new one (rest -> lock, lock -> lock, lock -> rest)
     cur.from = cur.to ? cur.to : goal;

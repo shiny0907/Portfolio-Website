@@ -21,7 +21,7 @@ export function labelClicked(lab) {
 }
 
 // ---------- Pages: About sits to the left of the hero ----------
-export const page = { target: 'hero', p: 0, from: 0, to: 0, start: -10, moving: false, pushed: false, decoded: false, jag: new Array(64).fill(0) };
+export const page = { target: 'hero', p: 0, from: 0, to: 0, start: -10, moving: false, pushed: false, routed: false, decoded: false, jag: new Array(64).fill(0) };
 const PAGE_DUR = 1.15;
 function goPage(name) {
   if (!state.booted || page.target === name) return;
@@ -73,7 +73,8 @@ window.addEventListener('keydown', function (e) {
 });
 
 // Two-finger sideways swipes move between the pages (About | Hero | Portfolio) instead of the
-// browser's back/forward gesture. Swipe left = one page left, swipe right = one page right.
+// browser's back/forward gesture. The swipe drags the world: swipe right pulls About in from the left,
+// swipe left pulls Portfolio in from the right, and the opposite swipe brings the hero back.
 // One page per gesture: trackpads keep sending momentum events, so it re-arms only after a short pause.
 const swipe = { acc: 0, lastAt: 0, locked: false };
 window.addEventListener('wheel', function (e) {
@@ -88,15 +89,21 @@ window.addEventListener('wheel', function (e) {
   swipe.acc += dx;
   if (Math.abs(swipe.acc) < 60) return;
   swipe.locked = true;
-  // With natural trackpad scrolling, fingers moving left give a positive deltaX
-  const left = swipe.acc > 0;
-  if (page.target === 'hero') { if (left) openAbout(); else openPortfolio(); }
-  else if (page.target === 'about' && !left) closeAbout();
-  else if (page.target === 'portfolio' && left) closeAbout();
+  // With natural trackpad scrolling, fingers moving right give a negative deltaX
+  const right = swipe.acc < 0;
+  if (page.target === 'hero') { if (right) openAbout(); else openPortfolio(); }
+  else if (page.target === 'about' && !right) closeAbout();
+  else if (page.target === 'portfolio' && right) closeAbout();
 }, { passive: false });
 
 // Page transition progress, and the eye travelling to (or from) its parking spot
 export function updatePage(t) {
+  // A link straight to #about or #portfolio opens that page as soon as the eye has booted
+  if (!page.routed && state.booted) {
+    page.routed = true;
+    if (location.hash === '#about') goPage('about');
+    else if (location.hash === '#portfolio') goPage('portfolio');
+  }
   if (page.moving) {
     const k01 = clamp((t - page.start) / PAGE_DUR, 0, 1);
     const e01 = k01 < 0.5 ? 4 * k01 * k01 * k01 : 1 - Math.pow(-2 * k01 + 2, 3) / 2;
