@@ -9,6 +9,32 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/styles.css">
+<!-- Fetch every module in parallel up front (they still only run after main.js checks for WebGL) -->
+<link rel="modulepreload" href="js/core.js">
+<link rel="modulepreload" href="js/app.js">
+<link rel="modulepreload" href="js/state.js">
+<link rel="modulepreload" href="js/pixel-font.js">
+<link rel="modulepreload" href="js/layout.js">
+<link rel="modulepreload" href="js/pages.js">
+<link rel="modulepreload" href="js/input.js">
+<link rel="modulepreload" href="js/reactions.js">
+<link rel="modulepreload" href="js/gaze.js">
+<link rel="modulepreload" href="js/about.js">
+<link rel="modulepreload" href="js/portfolio.js">
+<link rel="modulepreload" href="js/projects.js">
+<link rel="modulepreload" href="js/loader.js">
+<link rel="modulepreload" href="js/grid/grid.js">
+<link rel="modulepreload" href="js/grid/name.js">
+<link rel="modulepreload" href="js/grid/labels.js">
+<link rel="modulepreload" href="js/grid/corners.js">
+<link rel="modulepreload" href="js/eye/textures.js">
+<link rel="modulepreload" href="js/eye/materials.js">
+<link rel="modulepreload" href="js/eye/eyeball.js">
+<link rel="modulepreload" href="js/eye/ears.js">
+<link rel="modulepreload" href="js/eye/laser.js">
+<link rel="modulepreload" href="js/eye/hud.js">
+<link rel="modulepreload" href="js/eye/lighting.js">
+<link rel="modulepreload" href="js/eye/pixel-boot.js">
 </head>
 <body>
 <div id="stage" role="img" aria-label="A mechanical robot eye with cat ears and a red iris that follows your cursor, blinks, and fires a laser when you hold the mouse button"></div>
@@ -75,6 +101,6 @@
 </section>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="js/main.js"></script>
+<script type="module" src="js/main.js"></script>
 </body>
 </html>
