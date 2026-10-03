@@ -32,7 +32,11 @@ export function eyePoke(t) {
     sfx('annoyed');
     return;
   }
-  const type = pickFrom(EYE_REACTIONS, lastEyeReaction);
+  startEyeReaction(pickFrom(EYE_REACTIONS, lastEyeReaction), t);
+}
+// Play one eye reaction by name (also used by the Contact page: copying the email makes it happy)
+export function startEyeReaction(type, t) {
+  if (!state.booted) return;
   lastEyeReaction = type;
   state.react = { type: type, start: t, dur: EYE_REACT_DUR[type], done: {} };
   sfx(type);

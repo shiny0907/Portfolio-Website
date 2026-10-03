@@ -16,6 +16,7 @@ import { eyeReaction } from './reactions.js';
 import { updateGaze, updateGazePoint } from './gaze.js';
 import { updateAbout } from './about.js';
 import { updatePortfolio } from './portfolio.js';
+import { updateContact } from './contact.js';
 import { runLoader } from './loader.js';
 import { drawCursor } from './cursor.js';
 import { updateSound } from './sound.js';
@@ -56,8 +57,9 @@ function frame() {
 
   updateGrid(t, dt);
   updateAbout(t);
-  hint.style.visibility = Math.abs(page.p) > 0.01 ? 'hidden' : '';
+  hint.style.visibility = Math.abs(page.p) > 0.01 || page.q > 0.01 ? 'hidden' : '';
   updatePortfolio(t, dt);
+  updateContact(t);
 
   renderFrame(t);
   drawCursor(t);

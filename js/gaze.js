@@ -4,6 +4,7 @@ import { state } from './state.js';
 import { page } from './pages.js';
 import { grid } from './grid/grid.js';
 import { centerCardPoint } from './portfolio.js';
+import { contactLookPoint } from './contact.js';
 import { rig, pitchGroup } from './eye/eyeball.js';
 import { earsPerk } from './eye/ears.js';
 
@@ -23,7 +24,8 @@ function aimAt(ndc) {
     const dy = hit.y - rig.position.y;
     const dz = hit.z - rig.position.z;
     state.tYaw = clamp(Math.atan2(dx, dz), -MAX_YAW, MAX_YAW);
-    state.tPitch = clamp(Math.atan2(dy, Math.hypot(dx, dz)), -MAX_PITCH, MAX_PITCH);
+    // Parked at the bottom edge on Contact, the eye needs to tilt further up to reach the top of the screen
+    state.tPitch = clamp(Math.atan2(dy, Math.hypot(dx, dz)), -MAX_PITCH, MAX_PITCH + 0.5 * page.q);
   }
 }
 
@@ -47,11 +49,10 @@ function aimGlance() {
   aimAt(glanceNdc);
 }
 
-// Idle on the Portfolio page: study the centre card with small saccades instead of wandering
+// Idle on Portfolio or Contact: study one thing (the centre card, the email) with small saccades instead of wandering
 const idleNdc = new THREE.Vector2();
-function idlePortfolio(t) {
+function idleStudy(t, p) {
   if (t < state.idleNext) return;
-  const p = centerCardPoint();
   const r = stage.getBoundingClientRect();
   if (!p || !r.width) return;
   const x = p.x + (Math.random() * 2 - 1) * p.w * 0.3, y = p.y + (Math.random() * 2 - 1) * p.h * 0.3;
@@ -61,7 +62,9 @@ function idlePortfolio(t) {
 }
 
 function idleBehaviour(t) {
-  if (page.target === 'portfolio' && !page.moving) { state.sweep = null; idlePortfolio(t); return; }
+  // On Portfolio it studies the centre card, on Contact the email, instead of wandering
+  if (page.target === 'portfolio' && !page.moving) { state.sweep = null; idleStudy(t, centerCardPoint()); return; }
+  if (page.target === 'contact' && !page.moving) { state.sweep = null; idleStudy(t, contactLookPoint()); return; }
   if (state.sweep) {
     const sw = state.sweep;
     const p = (t - sw.start) / sw.dur;

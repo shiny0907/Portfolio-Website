@@ -77,14 +77,17 @@ export function drawName(ctx, t) {
   // The name (slides off to the right in whole squares when the About page opens)
   const scanR = C * 7;
   grid.nameShift = Math.round(page.p * (grid.w / C + NAME_COLS / 2 + 2));
-  const ns = grid.nameShift;
+  // ...and slides down off the bottom the same way when Contact comes down from above
+  grid.nameShiftY = Math.round(page.q * (grid.h / C + 2));
+  const ns = grid.nameShift, nsy = grid.nameShiftY;
   for (let k = 0; k < nameBlocks.length; k++) {
     const b = nameBlocks[k];
     if (b.state === 2 || t < b.appearAt) continue;
     if (grid.ox + (b.i + ns) * C > grid.w || grid.ox + (b.i + ns + 1) * C < 0) continue;
+    if (grid.oy + (b.j + nsy) * C > grid.h) continue;
     let a = 1, col, lit = 0;
     {
-      const dx = grid.ox + (b.i + ns + 0.5) * C - state.gazeX, dy = grid.oy + (b.j + 0.5) * C - state.gazeY;
+      const dx = grid.ox + (b.i + ns + 0.5) * C - state.gazeX, dy = grid.oy + (b.j + nsy + 0.5) * C - state.gazeY;
       const f = Math.max(0, 1 - Math.hypot(dx, dy) / scanR);
       lit = Math.round(Math.pow(f, 1.2) * 8);
       col = NAME_LEVELS[lit];
@@ -108,7 +111,7 @@ export function drawName(ctx, t) {
       ctx.shadowColor = 'rgba(255,255,255,' + ((lit - 4) * 0.15).toFixed(2) + ')';
       ctx.shadowBlur = C * 0.9;
     }
-    ctx.fillRect(grid.ox + (b.i + ns) * C, grid.oy + b.j * C, C, C);
+    ctx.fillRect(grid.ox + (b.i + ns) * C, grid.oy + (b.j + nsy) * C, C, C);
     ctx.shadowBlur = 0;
   }
   ctx.globalAlpha = 1;
@@ -205,7 +208,7 @@ function drawBreachMessage(ctx, t) {
   const px = Math.max(1, Math.floor(C / 2));
   const cx = grid.ox + (nameAt.firstCol + ns + NAME_COLS / 2) * C;
   const snap = function (x) { return grid.ox + Math.round((x - grid.ox) / C) * C; };
-  const top = grid.oy + (nameAt.topRow + (breach.sub ? 1 : 2)) * C;
+  const top = grid.oy + (nameAt.topRow + grid.nameShiftY + (breach.sub ? 1 : 2)) * C;
   const red = function () { return '#ff0a1e'; };
   drawPixelText(ctx, BREACH_MSG, snap(cx - pixelTextWidth(BREACH_MSG, px) / 2), top, px, red, breach.msg, t);
   if (breach.sub) {

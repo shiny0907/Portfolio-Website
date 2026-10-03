@@ -29,6 +29,7 @@
 <link rel="modulepreload" href="js/gaze.js">
 <link rel="modulepreload" href="js/about.js">
 <link rel="modulepreload" href="js/portfolio.js">
+<link rel="modulepreload" href="js/contact.js">
 <link rel="modulepreload" href="js/projects.js">
 <link rel="modulepreload" href="js/loader.js">
 <link rel="modulepreload" href="js/cursor.js">
@@ -108,6 +109,20 @@
       <p class="pf-note" id="pfNote"></p>
     </div>
     <div class="pf-track" id="pfTrack" data-click="track" aria-hidden="true"><canvas id="pfTrackCv"></canvas></div>
+  </div>
+</section>
+
+<section class="contact" id="contact" aria-label="Contact" aria-hidden="true">
+  <div class="contact-inner">
+    <canvas class="contact-status" id="ctStatus" aria-hidden="true"></canvas>
+    <h2 class="sr-only">Contact</h2>
+    <button class="contact-email" id="ctEmail" type="button" data-nofire data-cursor="COPY" aria-label="Copy my email address, shiningyu0907@gmail.com"><canvas id="ctEmailCv" aria-hidden="true"></canvas></button>
+    <p class="contact-lead">Open to Summer 2027 UI/UX internships. Have a role, a project, or a design question? Send it my way.</p>
+    <div class="contact-actions">
+      <button class="pf-case" type="button" id="ctCopy" data-nofire data-cursor="COPY">COPY ADDRESS</button>
+      <a class="pf-case" id="ctMail" href="mailto:shiningyu0907@gmail.com" data-nofire data-cursor="MAIL">EMAIL ME</a>
+    </div>
+    <p class="contact-note" id="ctNote" aria-live="polite"></p>
   </div>
 </section>
 

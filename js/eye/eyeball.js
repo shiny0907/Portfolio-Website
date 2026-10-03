@@ -328,8 +328,9 @@ export function updateEyeball(t, dt, tracking, react) {
   }
 
   // Hover
+  // (rigY is the page travel: the eye drops to the bottom edge on the Contact page)
+  rig.position.y = state.rigY + (reduceMotion ? 0 : Math.sin(t * 0.9) * 0.035 + react.hop);
   if (!reduceMotion) {
-    rig.position.y = Math.sin(t * 0.9) * 0.035 + react.hop;
     rig.rotation.z = Math.sin(t * 0.55) * 0.015 + react.tilt;
   }
   return glowLevel;

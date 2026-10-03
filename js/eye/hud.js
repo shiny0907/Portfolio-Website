@@ -50,6 +50,7 @@ hud.add(hudBrackets);
 const bracketMat = hudMat(0xc9d4de, 1, 0.32);
 hudBrackets.add(new THREE.Mesh(new THREE.RingGeometry(2.26, 2.272, 32, 1, -0.32, 0.64), bracketMat));
 hudBrackets.add(new THREE.Mesh(new THREE.RingGeometry(2.26, 2.272, 32, 1, Math.PI - 0.32, 0.64), bracketMat));
+hudBrackets.add(new THREE.Mesh(new THREE.RingGeometry(2.26, 2.272, 32, 1, Math.PI / 2 - 0.32, 0.64), bracketMat));   // top, framing CONTACT
 
 export const aura = new THREE.Sprite(new THREE.SpriteMaterial({
   map: glowTex, color: srgb(0xff0a1e).multiplyScalar(0.55), transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false

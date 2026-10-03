@@ -1,15 +1,29 @@
-// ABOUT ME / PORTFOLIO: pixel letters set along the ring of the gray bracket arcs, fixed on either side of the eye
+// ABOUT ME / PORTFOLIO / CONTACT: pixel letters set along the ring of the gray bracket arcs, fixed at 9, 3 and 12 o'clock
 import { renderer, camera, reduceMotion, clamp, lerp, camBase } from '../core.js';
 import { FONT, makeScramble, scrambleState } from '../pixel-font.js';
 import { state } from '../state.js';
 import { grid, projectToGrid } from './grid.js';
 import { placeName } from './name.js';
 
-// Side labels: stacked pixel letters along the outer gray ring, left and right. They can't be destroyed.
+// Labels: pixel letters along the outer gray ring. The side ones stack vertically (left and right); CONTACT reads
+// left to right across the top, between the ears. They can't be destroyed. `shown` hides a label whose spot is
+// cut in half by the parked eye (CONTACT on About/Portfolio, the side labels on Contact).
 export const SIDE_LABELS = [
-  { text: 'ABOUT ME', side: -1, h: 0, hovered: false },
-  { text: 'PORTFOLIO', side: 1, h: 0, hovered: false }
+  { text: 'ABOUT ME', side: -1, h: 0, hovered: false, shown: true },
+  { text: 'PORTFOLIO', side: 1, h: 0, hovered: false, shown: true },
+  { text: 'CONTACT', side: 0, h: 0, hovered: false, shown: true }
 ];
+// Show or hide a label; showing it again decodes the word back in
+export function setLabelShown(lab, on, t) {
+  if (lab.shown === on) return;
+  lab.shown = on;
+  if (!on) { lab.h = 0; lab.hovered = false; return; }
+  labelGlyphs.forEach(function (g) {
+    if (g.label !== lab) return;
+    g.scr.start = reduceMotion ? 0 : t + g.index * 0.035;
+    g.scr.end = reduceMotion ? 0 : g.scr.start + 0.2 + Math.random() * 0.2;
+  });
+}
 const LABEL_LEVELS = Array.from({ length: 9 }, function (_, k) {
   const f = k / 8, a = [201, 212, 222];
   return 'rgb(' + a.map(function (v) { return Math.round(v + (255 - v) * f); }).join(',') + ')';
@@ -54,8 +68,9 @@ export function layoutLabels() {
   labelGeo.cy = labelGeo.cy0;
   labelPx = Math.max(2, Math.round(labelGeo.R / 100));
   const glyphH = 7 * labelPx;
-  const step = glyphH + labelPx * 2;   // spacing between stacked letters, measured along the curve
   SIDE_LABELS.forEach(function (lab) {
+    // Spacing along the curve: stacked letters step by their height, the top label reads like normal text
+    const step = lab.side === 0 ? 8 * labelPx : glyphH + labelPx * 2;
     const items = labelGlyphs.filter(function (g) { return g.label === lab; });
     const lens = items.map(function (g) { return g.rows ? step : step * 0.5; }); // spaces take half a step
     const total = lens.reduce(function (a, b) { return a + b; }, 0) - step;
@@ -69,19 +84,21 @@ export function layoutLabels() {
   labelGeo.dirty = true;
 }
 
-// Position every label letter on its curve. The words stay put (ABOUT ME at 9 o'clock, PORTFOLIO at 3)
-// instead of turning with the brackets; only the ring's centre moves, travelling with the eye.
+// Position every label letter on its curve. The words stay put (ABOUT ME at 9 o'clock, PORTFOLIO at 3,
+// CONTACT at 12) instead of turning with the brackets; only the ring's centre moves, travelling with the eye.
 function placeLabels() {
-  const ncx = labelGeo.cx0 + state.rigX * labelGeo.ppu * (camBase.z - LABEL_Z) / camBase.z;
+  const depth = labelGeo.ppu * (camBase.z - LABEL_Z) / camBase.z;
+  const ncx = labelGeo.cx0 + state.rigX * depth, ncy = labelGeo.cy0 - state.rigY * depth;
   if (Math.abs(ncx - labelGeo.cx) > 0.25) { labelGeo.cx = ncx; labelGeo.dirty = true; }
+  if (Math.abs(ncy - labelGeo.cy) > 0.25) { labelGeo.cy = ncy; labelGeo.dirty = true; }
   if (!labelGeo.dirty) return;
   labelGeo.dirty = false;
   const ang = 0;
   const R = labelGeo.R, lp = labelPx, glyphH = 7 * lp;
   for (let k = 0; k < labelGlyphs.length; k++) {
     const g = labelGlyphs[k];
-    // Right side reads top to bottom with the angle decreasing; the left side mirrors it
-    const a = g.label.side > 0 ? ang - g.along / R : ang + Math.PI + g.along / R;
+    // Right side reads top to bottom with the angle decreasing; the left side mirrors it; the top reads left to right
+    const a = g.label.side > 0 ? ang - g.along / R : g.label.side < 0 ? ang + Math.PI + g.along / R : Math.PI / 2 - g.along / R;
     // Just outside the curve: clear the letter's box in whatever direction the curve faces
     const r = R + lp * 3 + 0.5 * (Math.abs(Math.cos(a)) * g.w + Math.abs(Math.sin(a)) * glyphH);
     g.x = Math.round(labelGeo.cx + r * Math.cos(a) - g.w / 2);
@@ -123,7 +140,7 @@ export function drawLabels(ctx, t, dt) {
   hoveredLabel = null;
   SIDE_LABELS.forEach(function (lab) {
     let over = false;
-    if (state.hasPointer && state.booted && !state.firing) {
+    if (lab.shown && state.hasPointer && state.booted && !state.firing) {
       const pad = lp * 3;
       for (let k = 0; k < labelGlyphs.length && !over; k++) {
         const g = labelGlyphs[k];
@@ -165,7 +182,7 @@ export function drawLabels(ctx, t, dt) {
 
   for (let k = 0; k < labelGlyphs.length; k++) {
     const g = labelGlyphs[k];
-    if (!g.rows) continue;
+    if (!g.rows || !g.label.shown) continue;
     const st = scrambleState(g.scr, t, g.rows[0].length);
     if (st === 'hidden') continue;
     const draw = st || g.rows;

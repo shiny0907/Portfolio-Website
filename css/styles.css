@@ -189,6 +189,31 @@
   .pf-case::before { content: ""; width: 8px; height: 8px; background: var(--red); }
   .pf-case:hover { border-color: var(--red); }
   .pf-note { margin: 10px 0 0; min-height: 1.2em; font-size: 0.8125rem; color: var(--red); letter-spacing: 0.08em; }
+  /* ---------- Contact page (above the hero) ---------- */
+  .contact {
+    position: fixed; inset: 0;
+    z-index: 3;
+    visibility: hidden;
+    overflow: hidden;
+    -webkit-user-select: none; user-select: none;
+  }
+  /* Content sits above the parked eye (its top half, the ring and the BACK label take the bottom of the screen) */
+  .contact-inner {
+    box-sizing: border-box;
+    height: calc(100% - var(--ct-reserve, 40%));
+    padding: calc(var(--edge) + 48px) var(--edge) 12px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 18px;
+    text-align: center;
+  }
+  .contact-status { display: block; }
+  .contact-email { display: block; margin: 0; padding: 12px; background: none; border: 0; cursor: pointer; }
+  .contact-email canvas { display: block; }
+  .contact-email:focus-visible { outline: 1px solid var(--red); outline-offset: 2px; }
+  .contact-lead { margin: 0; max-width: 46ch; font-size: clamp(0.9375rem, 1.1vw, 1.0625rem); line-height: 1.6; color: var(--ink); }
+  .contact-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
+  .contact-actions .pf-case { margin-top: 0; text-decoration: none; }
+  .contact-note { margin: 0; min-height: 1.2em; font-size: 0.8125rem; color: var(--red); letter-spacing: 0.08em; }
   .pf-track { position: relative; height: 62%; align-self: center; }
   .pf-track canvas { display: block; width: 100%; height: 100%; }
   .sr-only {

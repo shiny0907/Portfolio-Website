@@ -4,6 +4,7 @@ import { photoHit, drawPhotoOnGrid } from '../about.js';
 import { NAME_COLS, nameMap, drawName } from './name.js';
 import { drawLabels } from './labels.js';
 import { drawCorners } from './corners.js';
+import { drawContactBeam } from '../contact.js';
 
 // ---------- The grid universe behind everything ----------
 // An invisible lattice of perfect squares. Where the laser hits, squares burn solid red,
@@ -15,7 +16,7 @@ stage.insertBefore(gridCanvas, renderer.domElement);
 gridCanvas.style.zIndex = '0';
 renderer.domElement.style.zIndex = '2';
 const gctx = gridCanvas.getContext('2d');
-export const grid = { dpr: 1, w: 0, h: 0, cell: 24, ox: 0, oy: 0, cells: new Map(), dirty: true, lastX: null, lastY: null, nameShift: 0 };
+export const grid = { dpr: 1, w: 0, h: 0, cell: 24, ox: 0, oy: 0, cells: new Map(), dirty: true, lastX: null, lastY: null, nameShift: 0, nameShiftY: 0 };
 const GRID_MAX = 40000;
 const GRID_HOLD = 1.5, GRID_FADE = 1.0;
 const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
@@ -48,7 +49,7 @@ export function projectToGrid(x, y, z) {
 function igniteCell(i, j, t, gen) {
   const key = KEY(i, j);
   // A direct laser hit destroys a square of the name for good; spreading cracks can't touch it
-  const nb = nameMap.get(KEY(i - grid.nameShift, j));
+  const nb = nameMap.get(KEY(i - grid.nameShift, j - grid.nameShiftY));
   if (nb && nb.state !== 2) {
     if (gen === 0 && nb.state === 0 && t >= nb.appearAt) { nb.state = 1; nb.dieAt = t; }
     return;
@@ -134,6 +135,9 @@ export function updateGrid(t, dt) {
   ctx.globalAlpha = 1;
 
   // Side labels, in front of the burns
+  // Contact page: the data channel from the parked eye up to the page
+  drawContactBeam(ctx, t);
+
   drawLabels(ctx, t, dt);
 
   // Corners, and the occasional text glitch
@@ -143,6 +147,25 @@ export function updateGrid(t, dt) {
 function drawTear(ctx, t) {
   const C = grid.cell;
   const tearFade = page.moving ? 0 : (page.endAt ? (t - page.endAt) / 0.45 : 1);
+  if ((page.moving || tearFade < 1) && page.vertical) {
+    // Contact comes down from above: the same jagged tear, turned on its side, sweeping down the screen
+    const dir = page.toQ > page.fromQ ? 1 : -1;
+    const cj = Math.floor((page.q * grid.h - grid.oy) / C);
+    const cols0 = Math.floor(-grid.ox / C), cols1 = Math.ceil((grid.w - grid.ox) / C);
+    const TAIL = [1, 0.55, 0.3, 0.15, 0.06];
+    const exit = Math.round(tearFade * 7);
+    for (let i = cols0; i <= cols1; i++) {
+      const lead = cj + dir * (page.jag[(i % 64 + 64) % 64] + exit);
+      for (let k = TAIL.length - 1; k >= 0; k--) {
+        if (tearFade > 0 && !reduceMotion && Math.random() < tearFade * 0.85) continue;
+        ctx.globalAlpha = TAIL[k] * (1 - tearFade);
+        ctx.fillStyle = k === 0 ? '#ff8f99' : '#ff0a1e';
+        ctx.fillRect(grid.ox + i * C, grid.oy + (lead - dir * k) * C, C, C);
+      }
+    }
+    ctx.globalAlpha = 1;
+    return;
+  }
   if (page.moving || tearFade < 1) {
     const dir = page.to > page.from ? 1 : -1;
     const pfSide = page.to === -1 || page.from === -1;

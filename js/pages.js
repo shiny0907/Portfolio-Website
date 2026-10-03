@@ -1,147 +1,175 @@
-// Navigation between the hero, About (left) and Portfolio (right), and the eye travelling with the page
+// Navigation between the hero, About (left), Portfolio (right) and Contact (above), and the eye travelling with the page
 import { nowSec, clamp, camBase } from './core.js';
 import { state, beatRings } from './state.js';
-import { SIDE_LABELS, setLabelText } from './grid/labels.js';
+import { SIDE_LABELS, setLabelText, setLabelShown } from './grid/labels.js';
 import { aboutEl, aboutEnter } from './about.js';
 import { pfEl } from './portfolio.js';
+import { contactEl, contactEnter } from './contact.js';
 import { rig } from './eye/eyeball.js';
 import { hud, aura } from './eye/hud.js';
-import { EYE_PARK_X } from './layout.js';
+import { EYE_PARK_X, EYE_PARK_Y } from './layout.js';
 import { sfx } from './sound.js';
 
-// ABOUT ME opens the About page and becomes BACK; BACK returns to the hero.
-// PORTFOLIO still just announces the click ('hero:navigate') until that page exists.
+// Each label opens its page and becomes BACK; BACK returns to the hero.
+const LABEL_PAGE = ['about', 'portfolio', 'contact'];
+const LABEL_TEXT = ['ABOUT ME', 'PORTFOLIO', 'CONTACT'];
 export function labelClicked(lab) {
-  const t = nowSec();
-  if (lab === SIDE_LABELS[0]) {
-    if (page.target === 'hero') openAbout(); else closeAbout();
-    return;
-  }
-  if (page.target === 'hero') openPortfolio(); else closeAbout();
+  if (page.target === 'hero') openPage(LABEL_PAGE[SIDE_LABELS.indexOf(lab)]);
+  else closePage();
 }
 
-// ---------- Pages: About sits to the left of the hero ----------
-export const page = { target: 'hero', p: 0, from: 0, to: 0, start: -10, moving: false, pushed: false, routed: false, decoded: false, jag: new Array(64).fill(0) };
+// ---------- Pages: About sits left of the hero, Portfolio right, Contact above ----------
+// p is the sideways position (1 About, -1 Portfolio), q the vertical one (1 Contact)
+export const page = {
+  target: 'hero', p: 0, q: 0, from: 0, to: 0, fromQ: 0, toQ: 0, vertical: false,
+  start: -10, moving: false, pushed: false, routed: false, decoded: false, jag: new Array(64).fill(0)
+};
 const PAGE_DUR = 1.15;
+const PAGE_POS = { hero: [0, 0], about: [1, 0], portfolio: [-1, 0], contact: [0, 1] };
 function goPage(name) {
-  if (!state.booted || page.target === name) return;
+  if (!state.booted || page.target === name || !PAGE_POS[name]) return;
   const t = nowSec();
   page.target = name;
-  page.from = page.p;
-  page.to = name === 'about' ? 1 : name === 'portfolio' ? -1 : 0;
+  page.from = page.p; page.to = PAGE_POS[name][0];
+  page.fromQ = page.q; page.toQ = PAGE_POS[name][1];
+  page.vertical = page.toQ !== page.fromQ;
   page.start = t;
   page.moving = true;
   sfx('whoosh');
-  // A fresh tear pattern each time: each row's edge sits 0 to 2 squares ahead, varying smoothly
+  // A fresh tear pattern each time: each row's (or column's) edge sits 0 to 2 squares ahead, varying smoothly
   let v = Math.random() * 3;
   for (let j = 0; j < 64; j++) { v = clamp(v + (Math.random() - 0.5) * 1.6, 0, 2.99); page.jag[j] = Math.floor(v); }
   if (name !== 'about') page.decoded = false;
   // The word on the visible arc decodes into its new meaning mid-flight
-  if (name === 'about') setLabelText(SIDE_LABELS[0], 'BACK', t + 0.3);
-  else if (name === 'portfolio') setLabelText(SIDE_LABELS[1], 'BACK', t + 0.3);
-  else {
-    if (SIDE_LABELS[0].text !== 'ABOUT ME') setLabelText(SIDE_LABELS[0], 'ABOUT ME', t + 0.3);
-    if (SIDE_LABELS[1].text !== 'PORTFOLIO') setLabelText(SIDE_LABELS[1], 'PORTFOLIO', t + 0.3);
-  }
+  SIDE_LABELS.forEach(function (lab, i) {
+    const want = LABEL_PAGE[i] === name ? 'BACK' : LABEL_TEXT[i];
+    if (lab.text !== want) setLabelText(lab, want, t + 0.3);
+  });
   // Spin the clock rings up like gears while the eye travels
-  const spin = page.to > page.from ? 1 : -1;
+  const spin = (page.to - page.from) + (page.toQ - page.fromQ) > 0 ? 1 : -1;
   beatRings.forEach(function (r) { r.target += spin * Math.sign(r.step) * Math.PI / 2; });
   aboutEl.setAttribute('aria-hidden', name === 'about' ? 'false' : 'true');
   pfEl.setAttribute('aria-hidden', name === 'portfolio' ? 'false' : 'true');
-    if (name === 'about') aboutEnter(t);
+  contactEl.setAttribute('aria-hidden', name === 'contact' ? 'false' : 'true');
+  if (name === 'about') aboutEnter(t);
+  if (name === 'contact') contactEnter(t);
 }
-function openAbout() {
-  goPage('about');
-  try { history.pushState({ page: 'about' }, '', '#about'); page.pushed = true; } catch (err) { page.pushed = false; }
+function openPage(name) {
+  goPage(name);
+  try { history.pushState({ page: name }, '', '#' + name); page.pushed = true; } catch (err) { page.pushed = false; }
 }
-function openPortfolio() {
-  goPage('portfolio');
-  try { history.pushState({ page: 'portfolio' }, '', '#portfolio'); page.pushed = true; } catch (err) { page.pushed = false; }
-}
-function closeAbout() {
+function closePage() {
   if (page.pushed) { page.pushed = false; try { history.back(); return; } catch (err) { /* fall through */ } }
   try { if (location.hash) history.replaceState(null, '', location.pathname + location.search); } catch (err) { /* optional */ }
   goPage('hero');
+}
+function pageFromHash() {
+  const h = location.hash.slice(1);
+  return h === 'about' || h === 'portfolio' || h === 'contact' ? h : 'hero';
 }
 window.addEventListener('popstate', function () {
   // After any back/forward (or a hand-edited hash) the entry behind this one could be anything, so BACK
   // must no longer use history.back(); otherwise leaving About could land on Portfolio
   page.pushed = false;
-  if (location.hash === '#about') goPage('about');
-  else if (location.hash === '#portfolio') goPage('portfolio');
-  else goPage('hero');
+  goPage(pageFromHash());
 });
 window.addEventListener('keydown', function (e) {
-  if (e.key === 'Escape' && page.target !== 'hero') closeAbout();
+  if (e.key === 'Escape' && page.target !== 'hero') closePage();
 });
 
-// Two-finger sideways swipes move between the pages (About | Hero | Portfolio) instead of the
-// browser's back/forward gesture. The swipe drags the world: swipe right pulls About in from the left,
-// swipe left pulls Portfolio in from the right, and the opposite swipe brings the hero back.
+// Trackpad swipes (and the mouse wheel on the hero) move between pages instead of the browser's back/forward
+// gesture. The swipe drags the world: swipe right pulls About in from the left, swipe left pulls Portfolio in
+// from the right, swipe down (or scroll up) pulls Contact down from above; the opposite swipe brings the hero back.
 // One page per swipe, never two. After a swipe fires, further motion in that direction (its momentum, or the
 // same swipe carrying on) is ignored until the fingers leave the pad, which shows up as a break in the event
 // stream; and the same direction can never fire twice within 400 ms. Swiping the other way works straight
 // away, even mid-transition (the page just reverses).
-const swipe = { acc: 0, lastAt: 0, dir: 0, blockDir: 0, firedAt: -1e9, firedDir: 0, interval: 16 };
+const swipe = { acc: 0, lastAt: 0, dir: '', blockDir: '', firedAt: -1e9, firedDir: '', interval: 16 };
 window.addEventListener('wheel', function (e) {
   const scale = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 400 : 1;
   const dx = e.deltaX * scale, dy = e.deltaY * scale;
-  if (Math.abs(dx) <= Math.abs(dy)) return;   // vertical scrolling is left alone (About text, the carousel)
-  e.preventDefault();                          // no browser back/forward swipe
-  const now = performance.now(), dir = Math.sign(dx), gap = now - swipe.lastAt;
+  const horizontal = Math.abs(dx) > Math.abs(dy);
+  if (horizontal) {
+    e.preventDefault();                          // no browser back/forward swipe
+    if (page.target === 'contact') return;
+  } else {
+    // Vertical only navigates on the hero and Contact (About scrolls its text, Portfolio steps its carousel)
+    if (page.target !== 'hero' && page.target !== 'contact') return;
+    e.preventDefault();
+  }
+  const d = horizontal ? dx : dy;
+  const now = performance.now(), dir = (horizontal ? 'x' : 'y') + (d < 0 ? '-' : '+'), gap = now - swipe.lastAt;
   // A break is a pause clearly longer than the usual event spacing (which grows if frames are slow)
   const isBreak = gap > Math.max(80, swipe.interval * 4);
   if (!isBreak) swipe.interval += (Math.min(gap, 200) - swipe.interval) * 0.2;
-  if (isBreak) swipe.blockDir = 0;                         // fingers lifted: everything re-arms
+  if (isBreak) swipe.blockDir = '';                        // fingers lifted: everything re-arms
   if (isBreak || dir !== swipe.dir) swipe.acc = 0;
   swipe.lastAt = now;
   swipe.dir = dir;
   if (dir === swipe.blockDir) return;
-  swipe.acc += dx;
+  swipe.acc += d;
   if (Math.abs(swipe.acc) < 60) return;
   swipe.acc = 0;
-  if (dir === swipe.blockDir || now - swipe.firedAt < 400 && dir === swipe.firedDir) { swipe.blockDir = dir; return; }
+  if (now - swipe.firedAt < 400 && dir === swipe.firedDir) { swipe.blockDir = dir; return; }
   swipe.blockDir = dir;
   swipe.firedAt = now;
   swipe.firedDir = dir;
-  // With natural trackpad scrolling, fingers moving right give a negative deltaX
-  const right = dx < 0;
-  if (page.target === 'hero') { if (right) openAbout(); else openPortfolio(); }
-  else if (page.target === 'about' && !right) closeAbout();
-  else if (page.target === 'portfolio' && right) closeAbout();
+  // With natural trackpad scrolling, fingers moving right (or down) give a negative delta
+  if (horizontal) {
+    const right = dx < 0;
+    if (page.target === 'hero') openPage(right ? 'about' : 'portfolio');
+    else if (page.target === 'about' && !right) closePage();
+    else if (page.target === 'portfolio' && right) closePage();
+  } else {
+    const down = dy < 0;
+    if (page.target === 'hero' && down) openPage('contact');
+    else if (page.target === 'contact' && !down) closePage();
+  }
 }, { passive: false });
 
 // Page transition progress, and the eye travelling to (or from) its parking spot
 export function updatePage(t) {
-  // A link straight to #about or #portfolio opens that page as soon as the eye has booted
+  // A link straight to #about, #portfolio or #contact opens that page as soon as the eye has booted
   if (!page.routed && state.booted) {
     page.routed = true;
-    if (location.hash === '#about') goPage('about');
-    else if (location.hash === '#portfolio') goPage('portfolio');
+    if (pageFromHash() !== 'hero') goPage(pageFromHash());
   }
   if (page.moving) {
     const k01 = clamp((t - page.start) / PAGE_DUR, 0, 1);
     const e01 = k01 < 0.5 ? 4 * k01 * k01 * k01 : 1 - Math.pow(-2 * k01 + 2, 3) / 2;
     page.p = page.from + (page.to - page.from) * e01;
+    page.q = page.fromQ + (page.toQ - page.fromQ) * e01;
     if (k01 >= 1) { page.moving = false; page.endAt = t; }
   }
+  // Labels whose spot the parked eye cuts in half are hidden: CONTACT away from the hero's vertical line,
+  // the side labels on (or on the way to) Contact
+  const sideOn = page.target !== 'contact' && page.q < 0.02;
+  const topOn = (page.target === 'hero' || page.target === 'contact') && Math.abs(page.p) < 0.02;
+  setLabelShown(SIDE_LABELS[0], sideOn, t);
+  setLabelShown(SIDE_LABELS[1], sideOn, t);
+  setLabelShown(SIDE_LABELS[2], topOn, t);
 }
 
 export function updateTravel(dt) {
-  // The eye travels in step with the page (right edge for About, left edge for Portfolio),
+  // The eye travels in step with the page (right edge for About, left edge for Portfolio, bottom edge for Contact),
   // so it stays the same distance from the sliding content the whole way
-  const target = page.p * EYE_PARK_X;
+  const tx = page.p * EYE_PARK_X, ty = -page.q * EYE_PARK_Y;
   const rh = dt / 2;
   for (let s2 = 0; s2 < 2; s2++) {
-    state.vRigX += ((target - state.rigX) * 170 - state.vRigX * 22) * rh;
+    state.vRigX += ((tx - state.rigX) * 170 - state.vRigX * 22) * rh;
     state.rigX += state.vRigX * rh;
+    state.vRigY += ((ty - state.rigY) * 170 - state.vRigY * 22) * rh;
+    state.rigY += state.vRigY * rh;
   }
   rig.position.x = state.rigX;
   // The rings sit deeper than the eye, so perspective would slide them toward the centre when the eye
-  // moves sideways. Scale their offset by depth so they stay perfectly centred on the eye on screen.
+  // moves. Scale their offset by depth so they stay perfectly centred on the eye on screen.
   const dz = camBase.z;
   hud.position.x = state.rigX * (dz - hud.position.z) / dz;
+  hud.position.y = state.rigY * (dz - hud.position.z) / dz;
   aura.position.x = state.rigX * (dz - aura.position.z) / dz;
+  aura.position.y = state.rigY * (dz - aura.position.z) / dz;
   // While it travels the eye braces: ears fold back, lids narrow
-  state.travel += (clamp(Math.abs(state.vRigX) / 3, 0, 1) - state.travel) * Math.min(1, dt * 10);
+  const speed = Math.hypot(state.vRigX, state.vRigY);
+  state.travel += (clamp(speed / 3, 0, 1) - state.travel) * Math.min(1, dt * 10);
 }

@@ -4,9 +4,12 @@ import { resizeGrid } from './grid/grid.js';
 import { layoutLabels } from './grid/labels.js';
 import { layoutAbout } from './about.js';
 import { layoutPortfolio } from './portfolio.js';
+import { layoutContact } from './contact.js';
 
-// How far the eye travels sideways to park at the screen edge (set on resize)
+// How far the eye travels to park at the screen edge with half of it showing (set on resize):
+// sideways for About/Portfolio, down for Contact
 export let EYE_PARK_X = 3;
+export let EYE_PARK_Y = 2;
 
 export function resize() {
   const w = stage.clientWidth || window.innerWidth;
@@ -23,8 +26,10 @@ export function resize() {
   camera.updateProjectionMatrix();
   // On the About page the eye parks on the right edge with exactly half of it showing
   EYE_PARK_X = camBase.z * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.aspect;
+  EYE_PARK_Y = camBase.z * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
   layoutLabels();
   layoutAbout();
   layoutPortfolio();
+  layoutContact();
 }
 window.addEventListener('resize', resize);
