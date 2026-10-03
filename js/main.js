@@ -1470,19 +1470,22 @@
 
   const hudTicks = new THREE.Group();
   hud.add(hudTicks);
+  // Ticks are thin quads, not GL lines: lines are always 1 device pixel wide and render
+  // much fainter on some screens and GPUs, while quads scale with the eye everywhere.
   (function () {
-    const pts = [];
+    const pts = [], idx = [], hw = 0.006;
     for (let i = 0; i < 180; i++) {
-      const a = (i / 180) * TAU;
-      const r1 = i % 10 === 0 ? 2.12 : 2.06;
-      pts.push(Math.cos(a) * 2.02, Math.sin(a) * 2.02, 0, Math.cos(a) * r1, Math.sin(a) * r1, 0);
+      const a = (i / 180) * TAU, c = Math.cos(a), s = Math.sin(a);
+      const r0 = 2.02, r1 = i % 10 === 0 ? 2.12 : 2.06;
+      pts.push(c * r0 - s * hw, s * r0 + c * hw, 0, c * r0 + s * hw, s * r0 - c * hw, 0,
+               c * r1 + s * hw, s * r1 - c * hw, 0, c * r1 - s * hw, s * r1 + c * hw, 0);
+      const v = i * 4;
+      idx.push(v, v + 1, v + 2, v, v + 2, v + 3);
     }
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
-    const lm = new THREE.LineBasicMaterial({ color: srgb(0xc9d4de), transparent: true, opacity: 0, depthWrite: false, toneMapped: false });
-    lm.userData.base = 0.2;
-    hudMats.push(lm);
-    hudTicks.add(new THREE.LineSegments(geo, lm));
+    geo.setIndex(idx);
+    hudTicks.add(new THREE.Mesh(geo, hudMat(0xc9d4de, 1, 0.15)));
   })();
 
   const hudBrackets = new THREE.Group();
