@@ -5,6 +5,7 @@ import { NAME_COLS, nameMap, drawName } from './name.js';
 import { drawLabels } from './labels.js';
 import { drawCorners } from './corners.js';
 import { drawContactBeam } from '../contact.js';
+import { drawCatTrails } from '../cats.js';
 
 // ---------- The grid universe behind everything ----------
 // An invisible lattice of perfect squares. Where the laser hits, squares burn solid red,
@@ -134,9 +135,12 @@ export function updateGrid(t, dt) {
   });
   ctx.globalAlpha = 1;
 
-  // Side labels, in front of the burns
-  // Contact page: the data channel from the parked eye up to the page
+  // Contact page: the squares a lasered cat leaves behind as it boosts away, and the data channel
+  // from the parked eye up to the page
+  drawCatTrails(ctx, t);
   drawContactBeam(ctx, t);
+
+  // Labels, in front of the burns
 
   drawLabels(ctx, t, dt);
 
