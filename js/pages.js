@@ -75,20 +75,38 @@ window.addEventListener('keydown', function (e) {
 // Two-finger sideways swipes move between the pages (About | Hero | Portfolio) instead of the
 // browser's back/forward gesture. The swipe drags the world: swipe right pulls About in from the left,
 // swipe left pulls Portfolio in from the right, and the opposite swipe brings the hero back.
-// One page per gesture: trackpads keep sending momentum events, so it re-arms only after a short pause.
-const swipe = { acc: 0, lastAt: 0, locked: false };
+// One page per swipe. After a swipe the trackpad keeps sending fading momentum events, so the gesture stays
+// locked until the motion speeds up again (a fresh swipe), changes direction, or pauses. Momentum only fades.
+// Swipes also work mid-transition: the page just reverses or carries on from wherever it is.
+const swipe = { acc: 0, lastAt: 0, dir: 0, locked: false, hist: [], peak: 0, trough: Infinity };
+const avg = function (a, n) { const s = a.slice(-n); return s.reduce(function (x, y) { return x + y; }, 0) / s.length; };
 window.addEventListener('wheel', function (e) {
   const scale = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 400 : 1;
   const dx = e.deltaX * scale, dy = e.deltaY * scale;
   if (Math.abs(dx) <= Math.abs(dy)) return;   // vertical scrolling is left alone (About text, the carousel)
   e.preventDefault();                          // no browser back/forward swipe
-  const now = performance.now();
-  if (now - swipe.lastAt > 250) { swipe.acc = 0; swipe.locked = false; }   // a new gesture
+  const now = performance.now(), ad = Math.abs(dx), dir = Math.sign(dx);
+  if (now - swipe.lastAt > 200 || dir !== swipe.dir) { swipe.hist = []; swipe.acc = 0; swipe.locked = false; }
   swipe.lastAt = now;
-  if (swipe.locked || page.moving) return;
+  swipe.dir = dir;
+  swipe.hist.push(ad);
+  if (swipe.hist.length > 24) swipe.hist.shift();
+  // After a swipe fires, wait for its motion to peak and fade; speeding up again after that is a new swipe
+  if (swipe.locked) {
+    if (swipe.trough === Infinity) {
+      swipe.peak = Math.max(swipe.peak, ad);
+      if (ad < swipe.peak * 0.6) swipe.trough = ad;   // momentum is fading
+    } else {
+      swipe.trough = Math.min(swipe.trough, ad);
+      if (avg(swipe.hist, 3) > Math.max(8, swipe.trough * 2)) { swipe.locked = false; swipe.acc = 0; }
+    }
+  }
+  if (swipe.locked) return;
   swipe.acc += dx;
   if (Math.abs(swipe.acc) < 60) return;
   swipe.locked = true;
+  swipe.peak = ad;
+  swipe.trough = Infinity;
   // With natural trackpad scrolling, fingers moving right give a negative deltaX
   const right = swipe.acc < 0;
   if (page.target === 'hero') { if (right) openAbout(); else openPortfolio(); }
