@@ -9,6 +9,7 @@ import { hoveredLabel, labelBounds, labelPx } from './grid/labels.js';
 import { rig } from './eye/eyeball.js';
 import { trackRowAt } from './portfolio.js';
 import { POKE_MAX } from './input.js';
+import { catAt } from './cats.js';
 
 const root = document.documentElement;
 const fine = window.matchMedia ? window.matchMedia('(pointer: fine)') : null;
@@ -104,6 +105,8 @@ function findTarget() {
   if (hoveredLabel) return { key: 'lab:' + hoveredLabel.text, rect: labelBounds(hoveredLabel), side: true, label: hoveredLabel.text === 'BACK' ? 'EXIT' : 'OPEN' };
   if (state.overEar) return { key: 'ear' + state.overEar.side, rect: earRect(state.overEar), tight: true, label: state.overEar.side < 0 ? 'EAR L' : 'EAR R' };
   if (state.overEye) return { key: 'eye', rect: eyeRect(), label: 'EYE' };
+  // Contact page cats: a target lock with the cat's name (shooting them is the point)
+  if (page.target === 'contact') { const cat = catAt(state.clientX, state.clientY); if (cat) return cat; }
   const el = document.elementFromPoint(state.clientX, state.clientY);
   const hit = el && el.closest ? el.closest('[data-click], [data-cursor]') : null;
   if (!hit) return null;

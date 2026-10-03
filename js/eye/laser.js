@@ -53,6 +53,8 @@ scene.add(sparks);
 let sparkCursor = 0, sparkAccum = 0;
 const beamStart = new THREE.Vector3(), beamDir = new THREE.Vector3(), beamEnd = new THREE.Vector3();
 const UP = new THREE.Vector3(0, 1, 0), beamQ = new THREE.Quaternion(), projV = new THREE.Vector3();
+// Where the beam is this frame, for things that can be hit (the Contact page's cats). `on` only while it burns.
+export const beamInfo = { on: false, start: beamStart, dir: beamDir, end: beamEnd };
 
 function spawnSpark() {
   const i = sparkCursor;
@@ -77,6 +79,7 @@ export function updateLaser(t, dt) {
   if (!state.firing) { grid.lastX = null; grid.lastY = null; }
   state.impactX = null;
   state.impactY = null;
+  beamInfo.on = false;
   if (laser.visible) {
     rig.updateMatrixWorld(true);
     pitchGroup.localToWorld(beamStart.set(0, 0, 0.655));
@@ -99,6 +102,7 @@ export function updateLaser(t, dt) {
     impactCore.position.copy(beamEnd);
     impactCore.scale.setScalar(0.45 * w * (0.85 + 0.3 * Math.random()));
     if (state.firing && state.beam > 0.4) {
+      beamInfo.on = true;
       projV.copy(beamEnd).project(camera);
       igniteTrail((projV.x + 1) / 2 * grid.w, (1 - projV.y) / 2 * grid.h, t);
       state.impactX = (projV.x + 1) / 2 * stage.clientWidth;

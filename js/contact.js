@@ -53,6 +53,18 @@ export function contactEnter(t) {
   ct.noteUntil = 0;
 }
 
+// The block of content (status to note) in CSS pixels, so the cats keep out of it
+export function contactContentRect() {
+  if (page.q < 0.5) return null;
+  let l = Infinity, t = Infinity, r = -Infinity, b = -Infinity;
+  Array.prototype.forEach.call(inner.children, function (el) {
+    const q = el.getBoundingClientRect();
+    if (!q.width || !q.height) return;
+    l = Math.min(l, q.left); t = Math.min(t, q.top); r = Math.max(r, q.right); b = Math.max(b, q.bottom);
+  });
+  return l < r ? { left: l, top: t, right: r, bottom: b } : null;
+}
+
 // Where the eye should look when it's idle here (CSS pixels): the address
 export function contactLookPoint() {
   if (page.q < 0.5) return null;

@@ -17,6 +17,7 @@ import { updateGaze, updateGazePoint } from './gaze.js';
 import { updateAbout } from './about.js';
 import { updatePortfolio } from './portfolio.js';
 import { updateContact } from './contact.js';
+import { updateCats } from './cats.js';
 import { runLoader } from './loader.js';
 import { drawCursor } from './cursor.js';
 import { updateSound } from './sound.js';
@@ -54,6 +55,7 @@ function frame() {
   updateHud(t, dt, glowLevel);
   updateGazePoint();
   updateLaser(t, dt);
+  updateCats(t);
 
   updateGrid(t, dt);
   updateAbout(t);

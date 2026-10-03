@@ -135,9 +135,11 @@ const SOUNDS = {
   'ear-flick': function (t) { tone(t, 0.04, 1200, 1500, 0.2); },
   'ear-wiggle': function (t) { for (let i = 0; i < 3; i++) tone(t + i * 0.09, 0.03, 1100, 1250, 0.14); },
   'ear-pin': function (t) { tone(t, 0.12, 420, 300, 0.25); },
-  'ear-shake': function (t) { noise(t, 0.3, 700, 1100, 4, 0.3); }
+  'ear-shake': function (t) { noise(t, 0.3, 700, 1100, 4, 0.3); },
+  // A cat's jetpack kicking to full boost
+  boost: function (t) { noise(t, 0.7, 300, 1400, 1.2, 0.6); tone(t, 0.5, 120, 340, 0.25, 'sawtooth'); }
 };
-const GAPS = { blip: 0.25, servo: 0.35, whoosh: 0.6, breach: 2 };
+const GAPS = { blip: 0.25, servo: 0.35, whoosh: 0.6, breach: 2, boost: 0.2 };
 export function sfx(name, amt) {
   if (!snd.on || !snd.ctx) return;   // off: no audio work at all
   if (!claim(name, GAPS[name] || 0.12)) return;
