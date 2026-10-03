@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Shining Yu, UI/UX Designer</title>
+<meta name="description" content="Portfolio of Shining Yu, UI/UX designer and computer science student in Washington DC.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div id="stage" role="img" aria-label="A mechanical robot eye with cat ears and a red iris that follows your cursor, blinks, and fires a laser when you hold the mouse button"></div>
+<h1 class="name" id="name">Shining Yu</h1>
+<div class="loader" id="loader" role="status" aria-label="Loading">
+  <canvas class="loader-bg" id="loaderBg" aria-hidden="true"></canvas>
+</div>
+<p class="hint" id="hint">Move your cursor around</p>
+<section class="about" id="about" aria-label="About me" aria-hidden="true">
+  <div class="about-inner">
+    <div class="about-photo">
+      <canvas id="aboutPhoto" role="img" aria-label="Shining sitting on stone steps in a sunny palace courtyard, wearing sunglasses"></canvas>
+    </div>
+    <div class="about-body about-intro">
+      <canvas class="px-heading about-title" data-text="ABOUT ME" data-px="4" aria-hidden="true"></canvas>
+      <h2 class="sr-only">About me</h2>
+      <p class="about-lead">I'm Shining, a UI/UX designer and computer science student. I design interfaces, then I build them, and I like the ones that feel alive: bold, minimal, and a little playful.</p>
+      <p>I study Applied Computer Science at George Mason University, concentrating in Software Engineering with a minor in Design Thinking. I've led design and project management on teams of up to seven, built full design systems in Figma, and earned the Google UX Design Certificate.</p>
+      <p>Before college I served two years as Military Police in the Singapore Armed Forces. Now I run tutor hiring and operations at Mindset2Learn Tutoring and teach on the side. I speak English and Mandarin, and off screen I play drums for 50K followers on TikTok.</p>
+    </div>
+    <div class="about-body about-details">
+      <div class="about-section">
+        <canvas class="px-heading" data-text="EXPERIENCE" data-px="2" data-red="1" aria-hidden="true"></canvas>
+        <h3 class="sr-only">Experience</h3>
+        <ul class="about-list">
+          <li><span class="role">Executive Assistant and Tutor</span><span class="org">Mindset2Learn Tutoring</span><span class="when">2026–Now</span></li>
+          <li><span class="role">Tutor</span><span class="org">EduTutorVA, remote</span><span class="when">2025–Now</span></li>
+          <li><span class="role">Military Police</span><span class="org">Singapore Armed Forces</span><span class="when">2023–2025</span></li>
+          <li><span class="role">Coding Instructor</span><span class="org">Code Ninjas</span><span class="when">2021–2022</span></li>
+        </ul>
+      </div>
+
+      <div class="about-section about-cols">
+        <div>
+          <canvas class="px-heading" data-text="EDUCATION" data-px="2" data-red="1" aria-hidden="true"></canvas>
+          <h3 class="sr-only">Education</h3>
+          <p class="about-edu"><strong>George Mason University</strong><br>B.S. Applied Computer Science, Software Engineering<br>Minor in Design Thinking<br>Expected Spring 2028</p>
+          <p class="about-edu"><strong>Google UX Design Certificate</strong></p>
+        </div>
+        <div>
+          <canvas class="px-heading" data-text="TOOLS" data-px="2" data-red="1" aria-hidden="true"></canvas>
+          <h3 class="sr-only">Tools</h3>
+          <div class="tags"><span>Figma</span><span>Miro</span><span>Notion</span><span>Canva</span><span>GitHub</span><span>VS Code</span><span>HTML</span><span>CSS</span><span>Tailwind CSS</span><span>Java</span><span>C</span><span>R</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<section class="pf" id="pf" aria-label="Portfolio" aria-hidden="true">
+  <div class="pf-inner">
+    <div class="pf-carousel" id="pfCarousel"></div>
+    <div class="pf-details" aria-live="polite">
+      <p class="pf-count" id="pfCount"><b>01</b> / 06</p>
+      <canvas class="pf-title" id="pfTitle" aria-hidden="true"></canvas>
+      <h2 class="sr-only" id="pfTitleText">Project 01</h2>
+      <p class="pf-meta" id="pfMeta"></p>
+      <p class="pf-desc" id="pfDesc"></p>
+      <div class="tags" id="pfTags"></div>
+      <button class="pf-case" type="button" data-click="case">VIEW CASE STUDY</button>
+      <p class="pf-note" id="pfNote"></p>
+    </div>
+    <div class="pf-track" id="pfTrack" data-click="track" aria-hidden="true"><canvas id="pfTrackCv"></canvas></div>
+  </div>
+</section>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
