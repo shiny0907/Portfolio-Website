@@ -1,11 +1,11 @@
 // Custom cursor (mouse and trackpad only): red pixel brackets that live on the grid, lock onto anything
 // clickable, charge while firing, and leave a short trail of squares on fast moves. Touch keeps the normal behaviour.
 import { stage, camera, reduceMotion, clamp } from './core.js';
-import { makeScramble, drawPixelText, pixelTextWidth } from './pixel-font.js';
+import { makeScramble, drawPixelText, pixelTextWidth, LABEL_COLOR } from './pixel-font.js';
 import { state } from './state.js';
 import { page } from './pages.js';
 import { grid } from './grid/grid.js';
-import { hoveredLabel, labelBounds } from './grid/labels.js';
+import { hoveredLabel, labelBounds, labelPx } from './grid/labels.js';
 import { rig } from './eye/eyeball.js';
 import { trackRowAt } from './portfolio.js';
 import { POKE_MAX } from './input.js';
@@ -135,6 +135,21 @@ function brackets(r, u, L, col) {
   ctx.fillRect(x + w - L, y + h - u, L, u); ctx.fillRect(x + w - u, y + h - L, u, L);
 }
 
+// Bottom-right corner: which grid square the red frame is on, counted from the centre square of the site (0, 0).
+// Y counts up, like a graph. Locked onto a target, it reads the target's centre square.
+let coordScr = null;
+function drawCoords(fr, t) {
+  const C = grid.cell, cpx = labelPx;
+  const ci = Math.floor((fr.x + fr.w / 2 - grid.ox) / C), cj = Math.floor((fr.y + fr.h / 2 - grid.oy) / C);
+  const fmt = function (n) { const a = Math.abs(n); return (n < 0 ? '-' : '+') + (a < 10 ? '0' : '') + a; };
+  const str = 'X ' + fmt(ci) + '  Y ' + fmt(-cj);
+  if (!coordScr || coordScr.length !== str.length) coordScr = makeScramble(str.length, t);
+  const margin = Math.round(clamp(grid.w / grid.dpr * 0.03, 16, 48) * grid.dpr);   // same as the top corners
+  drawPixelText(ctx, str, grid.w - margin - pixelTextWidth(str, cpx), grid.h - margin - 7 * cpx, cpx, function (k) {
+    return str[k] === 'X' || str[k] === 'Y' ? LABEL_COLOR : '#ff0a1e';
+  }, coordScr, t);
+}
+
 export function drawCursor(t) {
   if (cv.width !== grid.w || cv.height !== grid.h) { cv.width = grid.w; cv.height = grid.h; }
   ctx.clearRect(0, 0, cv.width, cv.height);
@@ -233,6 +248,8 @@ export function drawCursor(t) {
       }
     });
   }
+
+  drawCoords(fr, t);
 
   // The real pointer position, so aiming stays exact
   // 4 CSS px with a 1 px dark outline, so it reads on the photo, the name and red burns alike

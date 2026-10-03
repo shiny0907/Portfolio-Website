@@ -64,9 +64,12 @@ function closeAbout() {
   goPage('hero');
 }
 window.addEventListener('popstate', function () {
+  // After any back/forward (or a hand-edited hash) the entry behind this one could be anything, so BACK
+  // must no longer use history.back(); otherwise leaving About could land on Portfolio
+  page.pushed = false;
   if (location.hash === '#about') goPage('about');
   else if (location.hash === '#portfolio') goPage('portfolio');
-  else { page.pushed = false; goPage('hero'); }
+  else goPage('hero');
 });
 window.addEventListener('keydown', function (e) {
   if (e.key === 'Escape' && page.target !== 'hero') closeAbout();
@@ -75,40 +78,34 @@ window.addEventListener('keydown', function (e) {
 // Two-finger sideways swipes move between the pages (About | Hero | Portfolio) instead of the
 // browser's back/forward gesture. The swipe drags the world: swipe right pulls About in from the left,
 // swipe left pulls Portfolio in from the right, and the opposite swipe brings the hero back.
-// One page per swipe. After a swipe the trackpad keeps sending fading momentum events, so the gesture stays
-// locked until the motion speeds up again (a fresh swipe), changes direction, or pauses. Momentum only fades.
-// Swipes also work mid-transition: the page just reverses or carries on from wherever it is.
-const swipe = { acc: 0, lastAt: 0, dir: 0, locked: false, hist: [], peak: 0, trough: Infinity };
-const avg = function (a, n) { const s = a.slice(-n); return s.reduce(function (x, y) { return x + y; }, 0) / s.length; };
+// One page per swipe, never two. After a swipe fires, further motion in that direction (its momentum, or the
+// same swipe carrying on) is ignored until the fingers leave the pad, which shows up as a break in the event
+// stream; and the same direction can never fire twice within 400 ms. Swiping the other way works straight
+// away, even mid-transition (the page just reverses).
+const swipe = { acc: 0, lastAt: 0, dir: 0, blockDir: 0, firedAt: -1e9, firedDir: 0, interval: 16 };
 window.addEventListener('wheel', function (e) {
   const scale = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 400 : 1;
   const dx = e.deltaX * scale, dy = e.deltaY * scale;
   if (Math.abs(dx) <= Math.abs(dy)) return;   // vertical scrolling is left alone (About text, the carousel)
   e.preventDefault();                          // no browser back/forward swipe
-  const now = performance.now(), ad = Math.abs(dx), dir = Math.sign(dx);
-  if (now - swipe.lastAt > 200 || dir !== swipe.dir) { swipe.hist = []; swipe.acc = 0; swipe.locked = false; }
+  const now = performance.now(), dir = Math.sign(dx), gap = now - swipe.lastAt;
+  // A break is a pause clearly longer than the usual event spacing (which grows if frames are slow)
+  const isBreak = gap > Math.max(80, swipe.interval * 4);
+  if (!isBreak) swipe.interval += (Math.min(gap, 200) - swipe.interval) * 0.2;
+  if (isBreak) swipe.blockDir = 0;                         // fingers lifted: everything re-arms
+  if (isBreak || dir !== swipe.dir) swipe.acc = 0;
   swipe.lastAt = now;
   swipe.dir = dir;
-  swipe.hist.push(ad);
-  if (swipe.hist.length > 24) swipe.hist.shift();
-  // After a swipe fires, wait for its motion to peak and fade; speeding up again after that is a new swipe
-  if (swipe.locked) {
-    if (swipe.trough === Infinity) {
-      swipe.peak = Math.max(swipe.peak, ad);
-      if (ad < swipe.peak * 0.6) swipe.trough = ad;   // momentum is fading
-    } else {
-      swipe.trough = Math.min(swipe.trough, ad);
-      if (avg(swipe.hist, 3) > Math.max(8, swipe.trough * 2)) { swipe.locked = false; swipe.acc = 0; }
-    }
-  }
-  if (swipe.locked) return;
+  if (dir === swipe.blockDir) return;
   swipe.acc += dx;
   if (Math.abs(swipe.acc) < 60) return;
-  swipe.locked = true;
-  swipe.peak = ad;
-  swipe.trough = Infinity;
+  swipe.acc = 0;
+  if (dir === swipe.blockDir || now - swipe.firedAt < 400 && dir === swipe.firedDir) { swipe.blockDir = dir; return; }
+  swipe.blockDir = dir;
+  swipe.firedAt = now;
+  swipe.firedDir = dir;
   // With natural trackpad scrolling, fingers moving right give a negative deltaX
-  const right = swipe.acc < 0;
+  const right = dx < 0;
   if (page.target === 'hero') { if (right) openAbout(); else openPortfolio(); }
   else if (page.target === 'about' && !right) closeAbout();
   else if (page.target === 'portfolio' && right) closeAbout();
