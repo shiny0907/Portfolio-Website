@@ -152,9 +152,12 @@ function drawCoords(fr, t) {
   }
   if (!coordScr || coordScr.length !== str.length) coordScr = makeScramble(str.length, t);
   const margin = Math.round(clamp(grid.w / grid.dpr * 0.03, 16, 48) * grid.dpr);   // same as the top corners
+  // Inside a case study it sits over the machine room: a thin dark halo keeps it readable
+  if (state.dive.open) { ctx.shadowColor = 'rgba(5, 7, 10, 0.95)'; ctx.shadowBlur = Math.round(4 * grid.dpr); }
   drawPixelText(ctx, str, grid.w - margin - pixelTextWidth(str, cpx), grid.h - margin - 7 * cpx, cpx, function (k) {
     return str[k] === 'X' || str[k] === 'Y' ? LABEL_COLOR : '#ff0a1e';
   }, coordScr, t);
+  ctx.shadowBlur = 0;
 }
 
 export function drawCursor(t) {

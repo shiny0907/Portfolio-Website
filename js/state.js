@@ -104,3 +104,7 @@ export const dive = {
   face: 0, center: 0, z: 0, wide: 0, pix: 0, hidden: false, fade: 0
 };
 state.dive = dive;
+
+// This visit's stats, shown on the SESSION monitor inside a case study
+export const stats = { shots: 0, burns: 0, cats: 0 };
+state.stats = stats;

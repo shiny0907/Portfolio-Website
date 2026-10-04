@@ -157,6 +157,7 @@ function beamHits(c) {
 }
 function flee(c, t) {
   c.state = 'flee';
+  state.stats.cats++;
   c.fleeAt = t;
   // Away from the eye, and a bit upward
   _a.copy(c.pos).sub(rig.position); _a.z = 0;

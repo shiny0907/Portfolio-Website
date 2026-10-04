@@ -34,6 +34,7 @@ function startFiring() {
   if (!state.booted || state.firing) return;
   state.firing = true;
   state.firedThisPress = true;
+  state.stats.shots++;
   if (state.blink.active) state.blink.active = false; // abort any blink, squint takes over
 }
 function stopFiring() {

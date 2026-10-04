@@ -1,16 +1,18 @@
 import { stage, renderer, camera, reduceMotion, TAU, lerp } from '../core.js';
 import { page } from '../pages.js';
+import { state } from '../state.js';
 import { photoHit, drawPhotoOnGrid } from '../about.js';
 import { NAME_COLS, nameMap, drawName, drawBreachFx } from './name.js';
 import { drawLabels } from './labels.js';
 import { drawCorners } from './corners.js';
 import { drawContactBeam } from '../contact.js';
 import { drawCatTrails } from '../cats.js';
-import { drawInteriorRain } from '../interior.js';
+import { caseOverlay } from '../case.js';
 
 // ---------- The grid universe behind everything ----------
 // An invisible lattice of perfect squares. Where the laser hits, squares burn solid red,
 // the breach spreads a little, holds briefly, then heals square by square.
+const cornerCv = document.createElement('canvas'), cornerCtx = cornerCv.getContext('2d');
 const gridCanvas = document.createElement('canvas');
 gridCanvas.className = 'grid';
 gridCanvas.setAttribute('aria-hidden', 'true');
@@ -63,6 +65,7 @@ function igniteCell(i, j, t, gen) {
   }
   if (grid.cells.size >= GRID_MAX) return;
   grid.cells.set(key, { i: i, j: j, born: t, gen: gen, lastHit: t, heat: 1, delay: Math.random() * 0.8 });
+  if (gen === 0) state.stats.burns++;
   grid.dirty = true;
 }
 
@@ -118,9 +121,6 @@ export function updateGrid(t, dt) {
   // The name (slides off to the right in whole squares when the About page opens)
   drawName(ctx, t);
 
-  // Inside a case study: matrix rain in the margins, behind the machinery
-  drawInteriorRain(ctx, t);
-
   // Your photo (About page), on the grid layer so the laser can knock squares out of it
   drawPhotoOnGrid(ctx, t);
 
@@ -149,7 +149,19 @@ export function updateGrid(t, dt) {
   drawLabels(ctx, t, dt);
 
   // Corners, and the occasional text glitch
-  drawCorners(ctx, t);
+  // (inside a case study they go on the overlay above the 3D machine room, so nothing covers them)
+  const over = caseOverlay();
+  if (over) {
+    // Over the machine room the pixel letters get a thin dark halo (not a background) so they stay readable.
+    // Drawn once to a spare canvas, then blurred in one step (blurring every pixel square is slow)
+    if (cornerCv.width !== grid.w || cornerCv.height !== grid.h) { cornerCv.width = grid.w; cornerCv.height = grid.h; }
+    cornerCtx.clearRect(0, 0, grid.w, grid.h);
+    drawCorners(cornerCtx, t);
+    over.shadowColor = 'rgba(5, 7, 10, 0.95)';
+    over.shadowBlur = Math.round(4 * grid.dpr);
+    over.drawImage(cornerCv, 0, 0);
+    over.shadowBlur = 0;
+  } else drawCorners(ctx, t);
 
   // The breach's shockwaves, error log and screen tearing, over everything
   drawBreachFx(ctx, t);

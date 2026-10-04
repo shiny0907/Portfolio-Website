@@ -31,6 +31,8 @@ export function caseIndexOf(slug) {
 const IN = { zoom0: 0.35, zoom1: 1.15, pix0: 0.8, cover: 1.15, done: 1.65 };
 const OUT = { cover: 0.35, zoom1: 1.1, face0: 0.8, done: 1.3 };
 export function caseActive() { return dive.open || dive.dir !== 0; }
+// Inside a case study the corner texts are drawn on this overlay (above the 3D machine room) instead of the grid
+export function caseOverlay() { return dive.open ? veilCtx : null; }
 
 // ---- Opening and closing ----
 export function openCase(k) {
