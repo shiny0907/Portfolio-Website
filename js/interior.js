@@ -1,15 +1,14 @@
 // Inside the eye: the machine room around a case study. Two tall strips of machinery fill the side margins:
 // the inside wall of the eye (armour plates with red seams), a truss girder, gear trains that really mesh and
 // tick on the eye's clock, hydraulic pistons, pipes and cable bundles, pressure gauges, and four CRT monitors
-// with information worth reading (the project file, a section index, Shining's status, this visit's stats).
-// Scrolling drives it: the strips slide past slower than the text and the gears turn with the scroll.
+// with information worth reading (a section index and this visit's stats). The strips stay put while the
+// page scrolls; the gears turn with the scroll.
 // Nothing sits behind the text column, and it hides when the margins are too thin (phones).
 import { scene, camera, camBase, reduceMotion, srgb, clamp } from './core.js';
 import { drawPixelText, pixelTextWidth, LABEL_COLOR } from './pixel-font.js';
 import { state, beatRings } from './state.js';
 import { M } from './eye/materials.js';
 import { bake } from './cat-model.js';
-import { PROJECTS } from './projects.js';
 
 const TAU = Math.PI * 2;
 const caseEl = document.getElementById('case');
@@ -19,7 +18,7 @@ const seamGlow = new THREE.MeshBasicMaterial({ color: RED.clone().multiplyScalar
 const wallGlow = new THREE.MeshBasicMaterial({ color: RED.clone().multiplyScalar(0.16), toneMapped: false });
 const steel = new THREE.MeshStandardMaterial({ color: srgb(0x2a3038), metalness: 0.85, roughness: 0.42, envMapIntensity: 1 });
 const DEPTH = -1.2;           // the plane the machinery sits on (behind the eye's usual spot)
-const PANEL_HALF = 470;       // CSS px: half the text column's dark panel (see .case::before)
+const PANEL_HALF = 470;       // CSS px: half the width kept clear for the text column (.case-inner is 900 wide)
 const STRIP_W = 0.9;          // design width of a strip, in half-screen-heights
 
 const root = new THREE.Group();
@@ -191,14 +190,14 @@ function monitor(parent, side, x, y, w, h, kind) {
 }
 
 // ---------- One strip, built in half-screen-height units; x measured outward from the text column ----------
-const WALL_Y0 = 1.5, WALL_Y1 = -6.5;
+const WALL_Y0 = 1.5, WALL_Y1 = -3.4;   // one screen tall at the smallest strip scale: the strips don't move
 function strip(side) {
   const s = new THREE.Group();
   const X = function (xo) { return side * xo; };
   // The inside wall of the eye: armour plates over a red glow, so the seams light up, with bolts and vents
   // (the glow only spans the plates, so it never shows beside the text column)
   box(s, wallGlow, 1.56, WALL_Y0 - WALL_Y1, 0.01, X(0.04 + 0.78), (WALL_Y0 + WALL_Y1) / 2, -0.47);
-  for (let row = 0; row < 14; row++) {
+  for (let row = 0; row < 9; row++) {
     for (let col = 0; col < 3; col++) {
       const pw = 0.52, ph = 0.56, gap = 0.016;
       const x = X(0.02 + col * (pw + gap) + pw / 2), y = WALL_Y0 - row * (ph + gap) - ph / 2;
@@ -210,7 +209,7 @@ function strip(side) {
   }
   // Truss girder near the text column: two rails, zig-zag struts, rivets at every joint
   [0.03, 0.15].forEach(function (xo) { box(s, M.armorLight, 0.026, WALL_Y0 - WALL_Y1, 0.05, X(xo), (WALL_Y0 + WALL_Y1) / 2, -0.25); });
-  for (let k = 0; k < 44; k++) {
+  for (let k = 0; k < 28; k++) {
     const y0 = WALL_Y0 - k * 0.18, y1 = y0 - 0.18;
     const len = Math.hypot(0.12, 0.18), a = Math.atan2(y1 - y0, (k % 2 ? -1 : 1) * 0.12 * side);
     box(s, steel, len, 0.016, 0.02, X(0.09), (y0 + y1) / 2, -0.26, a);
@@ -218,7 +217,7 @@ function strip(side) {
   }
   // Pipe down the outer side, with flanged couplings and a valve wheel
   add(s, new THREE.CylinderGeometry(0.034, 0.034, WALL_Y0 - WALL_Y1, 14), M.armorLight, X(0.88), (WALL_Y0 + WALL_Y1) / 2, -0.3);
-  for (let k = 0; k < 11; k++) {
+  for (let k = 0; k < 7; k++) {
     add(s, new THREE.CylinderGeometry(0.05, 0.05, 0.04, 16), steel, X(0.88), WALL_Y0 - 0.4 - k * 0.72, -0.3);
     for (let b = 0; b < 4; b++) bolt(s, X(0.88) + Math.cos(b * TAU / 4 + 0.78) * 0.042, WALL_Y0 - 0.4 - k * 0.72, -0.27);
   }
@@ -227,27 +226,23 @@ function strip(side) {
   // Cable bundle with clamps
   [0, 1, 2].forEach(function (k) {
     const pts = [];
-    for (let q = 0; q <= 16; q++) pts.push(new THREE.Vector3(X(0.25 + k * 0.02 + Math.sin(q * 0.8) * 0.03), WALL_Y0 - q * 0.5, -0.33 + k * 0.01));
+    for (let q = 0; q <= 10; q++) pts.push(new THREE.Vector3(X(0.25 + k * 0.02 + Math.sin(q * 0.8) * 0.03), WALL_Y0 - q * 0.5, -0.33 + k * 0.01));
     add(s, new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 90, 0.009, 6, false), k === 1 ? seamGlow : M.dark);
   });
-  for (let k = 0; k < 15; k++) box(s, steel, 0.11, 0.025, 0.04, X(0.27), WALL_Y0 - 0.25 - k * 0.5, -0.31);
+  for (let k = 0; k < 10; k++) box(s, steel, 0.11, 0.025, 0.04, X(0.27), WALL_Y0 - 0.25 - k * 0.5, -0.31);
 
   if (side < 0) {
-    monitor(s, side, X(0.48), 0.42, 0.74, 0.54, 'file');
+    monitor(s, side, X(0.48), 0.42, 0.74, 0.66, 'index');
     train(s, side, X(0.62), -0.75, [{ teeth: 28 }, { teeth: 14, at: 1.9 }, { teeth: 10, at: 0.35 }], M.armor);
     gauge(s, X(0.25), -1.35, 0.1, 0);
-    piston(s, X(0.6), -1.45, 0.5, 0);
-    monitor(s, side, X(0.48), -2.3, 0.74, 0.66, 'index');
-    train(s, side, X(0.5), -3.35, [{ teeth: 20 }, { teeth: 30, at: -0.35 }, { teeth: 12, at: -1.9 }], M.armorLight);
-    gauge(s, X(0.3), -4.2, 0.09, 1.7);
+    piston(s, X(0.6), -1.45, 0.4, 0);
+    train(s, side, X(0.45), -2.75, [{ teeth: 20 }, { teeth: 30, at: -0.4 }], M.armorLight);
   } else {
-    monitor(s, side, X(0.48), 0.42, 0.74, 0.54, 'status');
+    monitor(s, side, X(0.48), 0.42, 0.74, 0.66, 'session');
     train(s, side, X(0.64), -0.75, [{ teeth: 24 }, { teeth: 12, at: 1.95 }, { teeth: 18, at: 0.9 }], M.armor);
     gauge(s, X(0.26), -1.3, 0.1, 0.9);
-    monitor(s, side, X(0.48), -2.3, 0.74, 0.66, 'session');
-    train(s, side, X(0.62), -3.4, [{ teeth: 32 }, { teeth: 12, at: 4.3 }], M.armorLight);
-    piston(s, X(0.66), -4.55, 0.45, 1.4);
-    train(s, side, X(0.4), -5.55, [{ teeth: 22 }, { teeth: 14, at: 0.4 }], M.armor);
+    piston(s, X(0.2), -1.75, 0.4, 1.4);
+    train(s, side, X(0.62), -2.85, [{ teeth: 24 }, { teeth: 12, at: -0.6 }], M.armorLight);
   }
   bake(s);
   root.add(s);
@@ -259,15 +254,6 @@ const strips = [strip(-1), strip(1)];
 const two = function (n) { return (n < 10 ? '0' : '') + n; };
 const SUPPORTED = /[A-Z0-9 .:/>+\-@%]/;
 function clean(str) { return String(str).toUpperCase().replace(/–|—/g, '-').split('').map(function (c) { return SUPPORTED.test(c) ? c : ' '; }).join(''); }
-function wrap(str, n) {
-  const out = []; let line = '';
-  clean(str).split(' ').forEach(function (w) {
-    if (!w) return;
-    if ((line + ' ' + w).trim().length > n) { if (line) out.push(line); line = w; } else line = (line + ' ' + w).trim();
-  });
-  if (line) out.push(line);
-  return out;
-}
 const sessionStart = performance.now();
 const view = { k: 0, idx: 0, sections: [], prog: 0 };
 function text(g, str, x, y, col, px) { drawPixelText(g, str, x, y, px || 2, function () { return col; }, null, 0); }
@@ -282,16 +268,8 @@ function feed(m, t) {
   const g = m.g, W = m.cv.width, H = m.cv.height;
   g.fillStyle = '#05070a';
   g.fillRect(0, 0, W, H);
-  const p = PROJECTS[view.k] || PROJECTS[0];
   const L = 18;   // line height
-  if (m.kind === 'file') {
-    header(g, W, 'PROJECT FILE');
-    let y = 38;
-    text(g, clean(p.title).slice(0, 15), 8, y, '#ffffff'); y += L + 2;
-    wrap(p.role, 15).slice(0, 3).forEach(function (l) { text(g, l, 8, y, LABEL_COLOR); y += 16; });
-    text(g, p.year ? clean(p.year) : 'YEAR TBC', 8, y, '#6f7b87'); y += L;
-    text(g, 'CASE ' + two(view.k + 1) + ' / ' + two(PROJECTS.length), 8, y, '#ff0a1e');
-  } else if (m.kind === 'index') {
+  if (m.kind === 'index') {
     header(g, W, 'INDEX');
     view.sections.forEach(function (name, k) {
       const on = k === view.idx;
@@ -301,20 +279,6 @@ function feed(m, t) {
     for (let k = 0; k < n; k++) { g.fillStyle = k < Math.round(view.prog * n) ? '#ff0a1e' : '#262c33'; g.fillRect(8 + k * 10, by, 8, 8); }
     const pc = Math.round(view.prog * 100);
     text(g, (pc < 100 ? '0' : '') + (pc < 10 ? '0' : '') + pc + '%', W - 8 - pixelTextWidth('000%', 2), by - 3, LABEL_COLOR);
-  } else if (m.kind === 'status') {
-    header(g, W, 'STATUS');
-    let y = 40;
-    if (reduceMotion || Math.floor(t * 1.6) % 2 === 0) { g.fillStyle = '#ff0a1e'; g.fillRect(8, y + 2, 10, 10); }
-    text(g, 'OPEN TO WORK', 26, y, '#ffffff'); y += L + 4;
-    text(g, 'SUMMER 2027', 8, y, LABEL_COLOR); y += L;
-    text(g, 'UI/UX INTERN', 8, y, LABEL_COLOR); y += L;
-    text(g, 'WASHINGTON DC', 8, y, '#6f7b87'); y += L + 4;
-    // The address scrolls across like a ticker
-    const mail = 'SHININGYU0907@GMAIL.COM   ', mw = pixelTextWidth(mail, 2);
-    const off = reduceMotion ? 0 : Math.floor(t * 40) % mw;
-    g.save(); g.beginPath(); g.rect(8, y - 2, W - 16, 18); g.clip();
-    text(g, mail + mail, 8 - off, y, '#ff0a1e');
-    g.restore();
   } else {
     header(g, W, 'SESSION');
     const secs = Math.floor((performance.now() - sessionStart) / 1000);
@@ -352,13 +316,11 @@ export function updateInterior(t) {
   const sc = clamp(margin / (STRIP_W + 0.1), 0.45, 1.3);
   const scroll = caseEl.scrollTop;
   view.prog = caseEl.scrollHeight > caseEl.clientHeight ? scroll / (caseEl.scrollHeight - caseEl.clientHeight) : 1;
-  // The machinery rises as you read: by the end of the page the lower monitors (strip y -2.3) are mid-screen
-  const lift = reduceMotion ? 0 : view.prog * Math.max(0, 3.2 * sc - 0.86);
   strips.forEach(function (s, k) {
     const side = k === 0 ? -1 : 1;
     s.scale.setScalar(H * sc);
-    // The top of the strip (local y 0.9) sits near the top of the screen; scrolling lifts it
-    s.position.set(side * (PANEL_HALF / (vh / 2) + 0.04) * H, (0.86 - 0.9 * sc + lift) * H, DEPTH);
+    // Fixed in place (Shining asked): the top of the strip (local y 0.9) sits near the top of the screen
+    s.position.set(side * (PANEL_HALF / (vh / 2) + 0.04) * H, (0.86 - 0.9 * sc) * H, DEPTH);
   });
   // Gears tick on the eye's clock (the HUD's second hand) and turn with the scroll
   if (!reduceMotion) scrollSpin += (scroll - lastScroll) * 0.004;

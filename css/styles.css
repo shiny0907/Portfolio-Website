@@ -224,16 +224,6 @@
     mask-image: linear-gradient(to bottom, transparent calc(var(--edge) + 28px), #000 calc(var(--edge) + 52px), #000 calc(100% - var(--edge) - 52px), transparent calc(100% - var(--edge) - 28px));
   }
   .case::-webkit-scrollbar { display: none; }
-  /* Readable over the grid: a dark panel behind the text column that stays put while the page scrolls,
-     clear of the top and bottom bands so the corner texts stay visible */
-  .case::before {
-    content: ""; position: fixed; z-index: 0;
-    top: calc(var(--edge) + 40px); bottom: calc(var(--edge) + 40px);
-    left: 50%; width: min(940px, 100%); transform: translateX(-50%);
-    background: rgba(9, 12, 15, 0.9);
-    border-left: 1px solid rgba(201, 212, 222, 0.08); border-right: 1px solid rgba(201, 212, 222, 0.08);
-    pointer-events: none;
-  }
   .case-inner {
     position: relative; z-index: 1;
     box-sizing: border-box;
