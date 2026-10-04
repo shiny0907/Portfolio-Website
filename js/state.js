@@ -49,14 +49,15 @@ export const state = {
   jitY: 0, jitP: 0, jitTY: 0, jitTP: 0, jitNext: 0
 };
 
-// Rings that tick on a clock: inner lens parts every half second, outer HUD every second.
-// Steps are locked to real wall-clock seconds.
-function ringSpring(obj, step, everySecondOnly) {
-  return { obj: obj, step: step, secondOnly: everySecondOnly, angle: 0, vel: 0, target: 0 };
+// Rings that tick on a clock: the iris overlay every half second, outer HUD every second.
+// Steps are locked to real wall-clock seconds. The lens tick and arc rings don't tick (Shining found it too
+// busy); they sit still and spin up fast, in opposite directions, while the laser fires.
+function ringSpring(obj, step, everySecondOnly, fireSpin) {
+  return { obj: obj, step: step, secondOnly: everySecondOnly, fireSpin: fireSpin || 0, angle: 0, vel: 0, target: 0 };
 }
 export const beatRings = [
-  ringSpring(null, -TAU / 60, false),        // lens tick ring
-  ringSpring(null, TAU / 24, false),         // lens arc ring (opposite way)
+  ringSpring(null, -TAU / 60, false, -TAU * 1.2),   // lens tick ring (still unless firing)
+  ringSpring(null, TAU / 24, false, TAU * 0.8),     // lens arc ring (opposite way)
   ringSpring(null, -TAU / 120, false),       // iris overlay
   ringSpring(null, -TAU / 60, true),         // HUD tick ring, like a seconds hand
   ringSpring(null, TAU / 60, true)           // HUD red arcs (opposite way)
@@ -67,7 +68,7 @@ function onHalfBeat(index) {
   const fullSecond = index % 2 === 0;
   for (let i = 0; i < beatRings.length; i++) {
     const r = beatRings[i];
-    if (r.secondOnly && !fullSecond) continue;
+    if (r.fireSpin || (r.secondOnly && !fullSecond)) continue;
     r.target += r.step;
   }
   if (fullSecond) state.beatPulse = 1;
@@ -78,7 +79,10 @@ export function startBlink(seq, t) {
 }
 
 // Clockwork: every ring snaps one notch on the beat, with a small spring bounce
+let fireSpin = 0;   // 0..1, how spun up the lens rings are: quick to start, slower to wind down
 export function updateBeatRings(dt) {
+  const on = state.firing && !reduceMotion;
+  fireSpin += ((on ? 1 : 0) - fireSpin) * (1 - Math.exp(-dt * (on ? 9 : 3)));
   const hb = Math.floor(wallMs() / 500);
   if (hb !== lastHalfBeat) {
     const from = hb - lastHalfBeat > 4 ? hb - 1 : lastHalfBeat; // skip catch-up after a hidden tab
@@ -88,6 +92,7 @@ export function updateBeatRings(dt) {
   const rk = 700, rc = reduceMotion ? 54 : 30, rh = dt / 4;
   for (let i = 0; i < beatRings.length; i++) {
     const r = beatRings[i];
+    if (r.fireSpin && fireSpin > 0.001) r.target += r.fireSpin * fireSpin * dt;
     for (let s = 0; s < 4; s++) {
       r.vel += ((r.target - r.angle) * rk - r.vel * rc) * rh;
       r.angle += r.vel * rh;
