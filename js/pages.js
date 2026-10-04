@@ -61,6 +61,13 @@ function closePage() {
   try { if (location.hash) history.replaceState(null, '', location.pathname + location.search); } catch (err) { /* optional */ }
   goPage('hero');
 }
+function isReload() {
+  try {
+    const nav = performance.getEntriesByType('navigation')[0];
+    if (nav) return nav.type === 'reload';
+    return performance.navigation && performance.navigation.type === 1;   // older browsers
+  } catch (err) { return false; }
+}
 function pageFromHash() {
   const h = location.hash.slice(1);
   return h === 'about' || h === 'portfolio' || h === 'contact' ? h : 'hero';
@@ -127,10 +134,12 @@ window.addEventListener('wheel', function (e) {
 
 // Page transition progress, and the eye travelling to (or from) its parking spot
 export function updatePage(t) {
-  // A link straight to #about, #portfolio or #contact opens that page as soon as the eye has booted
+  // A link straight to #about, #portfolio or #contact opens that page as soon as the eye has booted.
+  // A reload always starts on the hero, though: the hash is just left over from browsing, so drop it.
   if (!page.routed && state.booted) {
     page.routed = true;
-    if (pageFromHash() !== 'hero') goPage(pageFromHash());
+    if (isReload()) { try { if (location.hash) history.replaceState(null, '', location.pathname + location.search); } catch (err) { /* optional */ } }
+    else if (pageFromHash() !== 'hero') goPage(pageFromHash());
   }
   if (page.moving) {
     const k01 = clamp((t - page.start) / PAGE_DUR, 0, 1);
