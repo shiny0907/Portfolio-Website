@@ -24,6 +24,8 @@ const STRIP_W = 0.9;          // design width of a strip, in half-screen-heights
 const root = new THREE.Group();
 root.visible = false;
 scene.add(root);
+// While hidden, skip the per-frame matrix update of every part inside (three.js walks invisible children too)
+root.updateMatrixWorld = function (force) { if (this.visible) THREE.Object3D.prototype.updateMatrixWorld.call(this, force); };
 
 function add(parent, geo, mat, x, y, z, rz) {
   const m = new THREE.Mesh(geo, mat);

@@ -1,0 +1,46 @@
+# Shining Yu
+
+> Shining Yu is a UI/UX designer and Applied Computer Science student at George Mason University (Software Engineering concentration, minor in Design Thinking, expected Spring 2028), based in the Washington DC area, who designs in Figma and builds in code. Open to Summer 2027 UI/UX internships.
+
+Website: https://shiningyu.com
+Email: shiningyu0907@gmail.com
+LinkedIn: https://www.linkedin.com/in/shiningyu
+
+## About
+
+- Lead Designer and Project Manager on Colliseam (2024 to 2025), a community platform for junior developers and designers. Led a team of 7 from discovery through delivery and built the full design system in Figma.
+- Lead Designer and Project Manager on Markpacks (2023 to 2024), a showcase site for Minecraft mod packs, prototyped in Figma and CSS.
+- Google UX Design Certificate.
+- Fluent in English and Mandarin Chinese.
+- Drummer with 50K followers and 32M views on TikTok (@shiny_drums).
+
+## Experience
+
+- Executive Assistant and Tutor, Mindset2Learn Tutoring, Northern Virginia (2026 to now): runs tutor hiring end to end; replaced paper applications and manual scheduling with an automated pipeline for 9 tutors.
+- Tutor, EduTutorVA, remote (2025 to now)
+- Military Police, Singapore Armed Forces (2023 to 2025)
+- Coding Instructor, Code Ninjas, Ashburn VA (2021 to 2022)
+
+## Skills
+
+- Design: prototyping, design systems, wireframing, user flows, responsive design, accessibility
+- Tools: Figma, Miro, Notion, Canva, GitHub, VS Code
+- Code: HTML, CSS, Tailwind CSS, Java, C, R
+
+## Work
+
+- Colliseam: community platform for junior developers and designers (Lead Designer and Project Manager, team of 7, full design system)
+- Joshua Edwards: client website for a math tutor
+- Joe McDavid: landing page for a landscape and travel photographer
+- Mapalo: landing page for an AI memory product with a hand-drawn identity
+- Lumnos: landing page for a design studio
+- GenreTrade: waitlist page for a music genre trading platform
+- Indesign: storefront for a bridal fashion brand
+- Acura: Dutch real estate site
+
+## Links
+
+- LinkedIn: https://www.linkedin.com/in/shiningyu
+- GitHub: https://github.com/shiny0907
+- Instagram: https://www.instagram.com/shiny_0907
+- TikTok: https://www.tiktok.com/@shiny_drums

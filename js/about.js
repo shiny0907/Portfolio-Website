@@ -44,13 +44,10 @@ function drawHeadings(t) {
   });
 }
 const photoCanvas = document.getElementById('aboutPhoto');
-const photoCtx = photoCanvas.getContext('2d');
-const photoSmall = document.createElement('canvas');
 const photoImg = new Image();
 let photoReady = false, photoStart = -1;
 photoImg.onload = function () { photoReady = true; };
-photoImg.src = 'assets/images/shining-yu.jpg';
-const PHOTO_STEPS = [30, 20, 13, 8, 5, 3];
+photoImg.src = 'assets/images/shining-yu.webp';
 // The photo is drawn on the background grid layer (behind the eye and the laser), split into
 // squares the size of a grid square. A direct laser hit knocks a square out for good, like the name.
 const photo = { x: 0, y: 0, w: 0, h: 0, cols: 0, rows: 0, C: 0, tiles: null, visible: false };

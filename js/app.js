@@ -1,5 +1,5 @@
 // Wires the modules together, runs the frame loop, and starts the loading screen
-import { camera, hint, camBase, nowSec, resetClock } from './core.js';
+import { renderer, scene, camera, hint, camBase, nowSec, resetClock } from './core.js';
 import { state, beatRings, updateBeatRings } from './state.js';
 import { tickGroup, arcGroup, overlay, updateEyeball } from './eye/eyeball.js';
 import { updateEars } from './eye/ears.js';
@@ -32,6 +32,22 @@ beatRings[4].obj = hudArcs;
 
 setupLighting();
 resize();
+
+// Draw everything once (the cats, the machine room, every hidden part) as the scene starts, so all the
+// shaders compile and the buffers and textures upload in the one pause the first frame always had,
+// instead of stuttering on the first visit to Contact or a case study. Cleared straight away, never seen.
+function prewarm() {
+  const shown = [], culled = [];
+  scene.traverse(function (o) {
+    if (!o.visible) { o.visible = true; shown.push(o); }
+    if (o.frustumCulled) { o.frustumCulled = false; culled.push(o); }
+  });
+  scene.updateMatrixWorld(true);
+  renderer.render(scene, camera);
+  renderer.clear();
+  shown.forEach(function (o) { o.visible = false; });
+  culled.forEach(function (o) { o.frustumCulled = true; });
+}
 
 // ---------- Frame loop ----------
 let last = 0;
@@ -71,6 +87,7 @@ function frame() {
 }
 
 function startScene() {
+  prewarm();
   resetClock();
   last = 0;
   requestAnimationFrame(frame);

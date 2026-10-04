@@ -21,7 +21,13 @@ try {
     timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23'
   });
 } catch (err) { dcClock = null; }
+let dcCacheSec = -1, dcCache = '';
 function dcTime() {
+  const sec = Math.floor(Date.now() / 1000);
+  if (sec !== dcCacheSec) { dcCacheSec = sec; dcCache = dcTimeNow(); }
+  return dcCache;
+}
+function dcTimeNow() {
   const pad = (n) => (n < 10 ? '0' : '') + n;
   if (dcClock) {
     const parts = {};

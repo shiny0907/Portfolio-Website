@@ -187,9 +187,14 @@ const glass = new THREE.Mesh(
 glass.position.z = -0.118;
 lens.add(glass);
 
+// The red light from the iris. It lives in the scene, not the rig, and follows an anchor in the lens: hiding
+// the rig (inside a case study) would otherwise take the light with it, change the light count, and make
+// every lit material compile a new shader on the spot (a half-second freeze). Hidden, it just goes dark.
 const irisLight = new THREE.PointLight(srgb(0xff0a1e), 1.6, 3, 2);
-irisLight.position.set(0, 0, 0.95);
-pitchGroup.add(irisLight);
+const irisAnchor = new THREE.Object3D();
+irisAnchor.position.set(0, 0, 0.95);
+pitchGroup.add(irisAnchor);
+scene.add(irisLight);
 
 // ---------- Mechanical lids ----------
 const LID_R = 1.05;
@@ -305,7 +310,8 @@ export function updateEyeball(t, dt, tracking, react) {
   pupilCoreMat.color.copy(RED).multiplyScalar(0.3 + 1.3 * glowLevel).lerp(HOT, state.beam);
   const facing = Math.cos(yaw) * Math.cos(pitch);
   glowMat.opacity = 0.9 * glowLevel * smoothstep(0.35, 1, facing);
-  irisLight.intensity = 1.6 * glowLevel + 2.6 * state.beam;
+  irisLight.intensity = state.dive.hidden ? 0 : 1.6 * glowLevel + 2.6 * state.beam;
+  irisAnchor.getWorldPosition(irisLight.position);
   M.core.emissiveIntensity = 0.3 + 0.35 * glowLevel + 0.35 * state.beatPulse * glowLevel + 0.6 * anger;
   const ledOn = (wallMs() % 1000) < 500 ? 1 : 0.15;
   M.led.color.copy(RED).multiplyScalar(0.25 + 1.0 * ledOn * (0.3 + 0.7 * glowLevel));

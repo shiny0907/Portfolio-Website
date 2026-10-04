@@ -14,9 +14,8 @@ export const pfEl = document.getElementById('pf');
 // ---------- Portfolio page: a looping vertical carousel, details that decode, and a position track ----------
 const PN = PROJECTS.length;
 const pfCarousel = document.getElementById('pfCarousel');
-const pfInner = pfEl.querySelector('.pf-inner');
 const pfTitle = document.getElementById('pfTitle'), pfTitleCtx = pfTitle.getContext('2d');
-const pfTrack = document.getElementById('pfTrack'), pfTrackCv = document.getElementById('pfTrackCv'), pfTrackCtx = pfTrackCv.getContext('2d');
+const pfTrackCv = document.getElementById('pfTrackCv'), pfTrackCtx = pfTrackCv.getContext('2d');
 const car = { pos: 0, vel: 0, target: 0, cur: -1, h0: 200, w0: 320, titleScr: null, titleText: '' };
 const pfCards = PROJECTS.map(function (pr, k) {
   const el = document.createElement('div');
@@ -59,7 +58,6 @@ function drawCardArt(k) {
   g.fillRect(W - L, H - b, L, b); g.fillRect(W - b, H - L, b, L);
 }
 // Copy a card's art to its visible canvas at a given pixel size (1 = full detail)
-const CARD_PIX = [26, 18, 12, 8, 5, 3];
 function showCard(c, px) {
   if (c.shown === px || !c.art) return;
   c.shown = px;
@@ -95,17 +93,6 @@ const interpAt = function (a, arr) {
   const i = Math.min(arr.length - 2, Math.floor(a));
   return lerp(arr[i], arr[Math.min(arr.length - 1, i + 1)], Math.min(1, a - i));
 };
-function pfEnter(t) {
-  positionCards();
-  pfCards.forEach(function (c) { showCard(c, 1); });
-  const cur = ((Math.round(car.pos) % PN) + PN) % PN;
-  car.enterAt = 0;
-  car.cur = cur;
-  pfSetDetails(cur, t);
-  car.titleScr = null;
-  drawTrack(t);
-  drawPfTitle(t);
-}
 function pfSetDetails(k, t) {
   const pr = PROJECTS[k];
   const n = (k + 1 < 10 ? '0' : '') + (k + 1), tot = (PN < 10 ? '0' : '') + PN;
@@ -115,7 +102,7 @@ function pfSetDetails(k, t) {
   document.getElementById('pfDesc').textContent = pr.desc;
   document.getElementById('pfTags').innerHTML = pr.tags.map(function (tg) { return '<span>' + tg + '</span>'; }).join('');
   document.getElementById('pfNote').textContent = '';
-  car.titleScr = makeScramble(pr.title.length, Math.max(t, car.enterAt || 0));
+  car.titleScr = makeScramble(pr.title.length, t);
   car.titleText = pr.title;
   pfCards.forEach(function (c, i) { c.el.classList.toggle('is-current', i === k); });
 }
