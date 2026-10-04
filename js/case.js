@@ -151,29 +151,30 @@ function drawPage(t) {
   });
 }
 
-// ---- The veil: grid squares (the pupil, broken up) covering the screen, dissolving in a random order ----
-let veilOrder = null, veilCols = 0, veilRows = 0;
-function drawVeil(amount, t) {
+// ---- The veil: the pupil itself. Covering the screen it's black with a red core square in the middle; it
+// dilates open from the centre as a circle snapped to the grid, a single red iris ring on its edge, and the
+// case study shows through. Coming out it constricts back down the same way. ----
+function drawVeil(amount) {
   const W = grid.w, H = grid.h;
   if (veil.width !== W || veil.height !== H) { veil.width = W; veil.height = H; }
   veilCtx.clearRect(0, 0, W, H);
   if (amount <= 0) return;
   const C = grid.cell;
-  const i0 = Math.floor(-grid.ox / C), j0 = Math.floor(-grid.oy / C);
-  const cols = Math.ceil((W - grid.ox) / C) - i0 + 1, rows = Math.ceil((H - grid.oy) / C) - j0 + 1;
-  if (!veilOrder || cols !== veilCols || rows !== veilRows) {
-    veilCols = cols; veilRows = rows;
-    veilOrder = new Float32Array(cols * rows);
-    for (let k = 0; k < veilOrder.length; k++) veilOrder[k] = Math.random();
-  }
-  for (let j = 0; j < rows; j++) {
-    for (let i = 0; i < cols; i++) {
-      const r = veilOrder[j * cols + i];
-      if (r >= amount) continue;
-      // Mostly black like the pupil, some red like its core; the squares about to go flash hot
-      const edge = amount - r < 0.05 && amount < 1;
-      veilCtx.fillStyle = edge ? '#ff8f99' : r * 997 % 1 < 0.12 ? '#ff0a1e' : '#07090b';
-      veilCtx.fillRect(grid.ox + (i0 + i) * C, grid.oy + (j0 + j) * C, C, C);
+  const i0 = Math.floor(-grid.ox / C) - 1, i1 = Math.ceil((W - grid.ox) / C);
+  const j0 = Math.floor(-grid.oy / C) - 1, j1 = Math.ceil((H - grid.oy) / C);
+  const cx = (W / 2 - grid.ox) / C, cy = (H / 2 - grid.oy) / C;
+  const f = 1 - amount, open = f < 0.5 ? 4 * f * f * f : 1 - Math.pow(-2 * f + 2, 3) / 2;
+  const R = open * (Math.hypot(W, H) / 2 / C + 3);
+  for (let j = j0; j <= j1; j++) {
+    for (let i = i0; i <= i1; i++) {
+      const d = Math.hypot(i + 0.5 - cx, j + 0.5 - cy);
+      if (d < R) continue;
+      const x = grid.ox + i * C, y = grid.oy + j * C;
+      veilCtx.fillStyle = '#090c0f';
+      veilCtx.fillRect(x, y, C, C);
+      // The iris ring: one red square deep, with a faint second row behind it
+      if (d < R + 1) { veilCtx.fillStyle = '#ff0a1e'; veilCtx.fillRect(x, y, C, C); }
+      else if (d < R + 2) { veilCtx.globalAlpha = 0.28; veilCtx.fillStyle = '#ff0a1e'; veilCtx.fillRect(x, y, C, C); veilCtx.globalAlpha = 1; }
     }
   }
 }
@@ -181,6 +182,7 @@ function drawVeil(amount, t) {
 // ---- Per frame ----
 const easeIn = function (x) { return x * x * x; };
 const easeOut = function (x) { return 1 - Math.pow(1 - x, 3); };
+const easeInOut = function (x) { return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; };
 const PIX = [0.17, 0.25, 0.36, 0.5, 0.75, 1];   // the pupil breaking into grid squares, smallest first
 export function updateCase(t) {
   // A #case/ link (or back/forward to one) opens once Portfolio has arrived, with that project centred
@@ -218,7 +220,8 @@ export function updateCase(t) {
     veilAmt = e < cover ? clamp(e / cover, 0, 1) : 1 - clamp((e - cover) / 0.25, 0, 1);
     if (e >= cover && dive.open) dive.open = false;
     dive.hidden = e < cover;
-    dive.z = rm ? 0 : e < cover ? 1 : 1 - easeOut(clamp((e - cover) / (OUT.zoom1 - cover), 0, 1));
+    // Pulls back slowly at first, so the pupil still fills the screen as the veil lets go, then speeds away
+    dive.z = rm ? 0 : e < cover ? 1 : 1 - easeInOut(clamp((e - cover) / (OUT.zoom1 - cover), 0, 1));
     dive.pix = rm || e < cover ? 0 : PIX[Math.max(0, PIX.length - 1 - Math.floor((e - cover) / 0.06))];
     if (e - cover > 0.06 * PIX.length) dive.pix = 0;
     dive.face = rm ? 0 : 1 - smoothstep(OUT.face0, OUT.done, e);
@@ -245,5 +248,5 @@ export function updateCase(t) {
   pfEl.style.pointerEvents = dive.fade > 0.5 ? 'none' : '';
   rig.visible = hud.visible = aura.visible = !dive.hidden;
   if (dive.open) drawPage(t);
-  drawVeil(reduceMotion ? 0 : veilAmt, t);
+  drawVeil(reduceMotion ? 0 : veilAmt);
 }
