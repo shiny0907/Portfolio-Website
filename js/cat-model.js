@@ -169,6 +169,7 @@ function prism(a, b, c, n, depth) {
 // LED face: a dot-matrix screen (15 x 9 LEDs) in the cat's colour, unlit LEDs faintly visible
 const EYES = {
   round: ['.##.', '####', '####', '.##.'],
+  goggle: ['.###.', '#...#', '#.#.#', '#...#', '.###.'],   // ring eyes with a pupil
   tall: ['.#.', '###', '###', '###', '.#.'],
   happy: ['.##.', '#..#', '#..#'],
   slant: ['#...', '##..', '###.', '####'],     // angry: the inner corners sit low
@@ -303,13 +304,13 @@ function flamePlume(color, opacity) {
 
 // ---------- The cats ----------
 export const PRESETS = [
-  { name: 'SCOUT', id: 'SC-01', body: 'round', head: 'round', ears: 'pointy', eyes: 'round', pack: 'twin', tail: 'curl', finish: 'armorLight', glow: 0x29e6ff },
+  { name: 'SCOUT', id: 'SC-01', body: 'frame', head: 'round', ears: 'pointy', eyes: 'goggle', pack: 'rotor', tail: 'whip', finish: 'armorLight', glow: 0x29e6ff },
   { name: 'TANK', id: 'TK-02', body: 'box', head: 'box', ears: 'folded', eyes: 'cyclops', pack: 'single', tail: 'antenna', finish: 'armor', glow: 0xffa21f },
   { name: 'RACER', id: 'RC-03', body: 'pod', head: 'round', ears: 'tuft', eyes: 'tall', pack: 'wing', tail: 'long', finish: 'chrome', glow: 0xa96bff },
   { name: 'CHONK', id: 'CH-04', body: 'egg', head: 'round', ears: 'round', eyes: 'happy', pack: 'twin', tail: 'stub', finish: 'lid', glow: 0x86ff4a },
   { name: 'ROGUE', id: 'RG-05', body: 'facet', head: 'facet', ears: 'split', eyes: 'slant', pack: 'single', tail: 'segment', finish: 'armor', glow: 0xff4fb8 }
 ];
-const BODY_R = { round: { x: 0.46, y: 0.34, z: 0.34 }, egg: { x: 0.47, y: 0.4, z: 0.42 }, pod: { x: 0.56, y: 0.22, z: 0.22 }, box: { x: 0.43, y: 0.25, z: 0.25 }, facet: { x: 0.5, y: 0.35, z: 0.35 } };
+const BODY_R = { frame: { x: 0.44, y: 0.3, z: 0.3 }, round: { x: 0.46, y: 0.34, z: 0.34 }, egg: { x: 0.47, y: 0.4, z: 0.42 }, pod: { x: 0.56, y: 0.22, z: 0.22 }, box: { x: 0.43, y: 0.25, z: 0.25 }, facet: { x: 0.5, y: 0.35, z: 0.35 } };
 const BANDS = [
   { t0: 0.3, t1: 0.78, n: 6, off: 0, lift: 0 },
   { t0: 0.81, t1: 1.4, n: 8, off: -Math.PI / 8, lift: 0.014 },
@@ -431,6 +432,42 @@ export function buildCat(p, root) {
       cell.rotation.y = s * 0.5;
       powerCell(cell, { p: new THREE.Vector3(), n: new THREE.Vector3(0, 1, 0), t: new THREE.Vector3(1, 0, 0), b: new THREE.Vector3(0, 0, 1) }, 0);
     });
+  } else if (p.body === 'frame') {
+    // SCOUT, the recon cat: a light open frame instead of armour. Chrome ribs and rails round a core you can
+    // see glowing inside, a nose cone and a tail cap, and a battery slung underneath.
+    const RC = { x: R.x * 0.6, y: R.y * 0.62, z: R.z * 0.62 };
+    add(body, ellGeo(RC, 1, 0, TAU, 0, Math.PI), m.core);
+    add(body, ellGeo(RC, 1.06, 0, TAU, 0, Math.PI), new THREE.MeshBasicMaterial({ color: srgb(p.glow), wireframe: true, transparent: true, opacity: 0.25, toneMapped: false }));
+    const ribX = [-0.3, -0.18, -0.06, 0.06, 0.18, 0.3];
+    ribX.forEach(function (x, k) {
+      const r = R.y * Math.sqrt(Math.max(0.05, 1 - (x / R.x) * (x / R.x)));
+      add(body, new THREE.TorusGeometry(r, 0.02, 6, 36).rotateY(Math.PI / 2), k % 2 ? M.chrome : finish, x, 0, 0);
+      add(body, new THREE.TorusGeometry(r - 0.028, 0.005, 4, 36).rotateY(Math.PI / 2), m.glow, x, 0, 0);
+    });
+    // Rails along the body (a thicker spine on top), bolted where they cross the ribs
+    [0, 0.95, -0.95, 2.3, -2.3].forEach(function (ph, k) {
+      const pts = [];
+      for (let q = 0; q <= 10; q++) {
+        const x = -R.x * 0.82 + q / 10 * R.x * 1.64, f = Math.sqrt(Math.max(0.05, 1 - (x / R.x) * (x / R.x)));
+        pts.push(new THREE.Vector3(x, Math.cos(ph) * R.y * f, Math.sin(ph) * R.z * f));
+      }
+      add(body, new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 40, k === 0 ? 0.024 : 0.015, 6, false), k === 0 ? M.chrome : finish);
+      ribX.forEach(function (x) { bolt(body, ell(R, Math.acos(x / R.x), ph, 0), 0.012); });
+    });
+    // Nose cone and tail cap
+    add(body, ellGeo(R, 1.0, 0, TAU, 0, 0.55), finish);
+    add(body, ringX(R.y * Math.sin(0.55) + 0.004, 0.008, 32), m.glow, R.x * Math.cos(0.55), 0, 0);
+    add(body, ellGeo(R, 1.0, 0, TAU, 2.65, Math.PI - 2.65), m.alt);
+    [1, -1].forEach(function (s) {
+      // Power cell on the nose, ID plate hung on the side rails
+      powerCell(body, ell(R, 0.36, s * Math.PI / 2, 0), 0.004);
+      boxAt(body, M.dark, 0.26, 0.11, 0.02, -0.02, -0.02, s * (R.z * 0.97));
+      add(body, new THREE.PlaneGeometry(0.235, 0.095), plateDecal, -0.02, -0.02, s * (R.z * 0.97 + 0.011), 0, s > 0 ? 0 : Math.PI, 0);
+    });
+    // Battery slung underneath, with a strip of light
+    boxAt(body, M.armor, 0.3, 0.07, 0.15, -0.02, -R.y * 0.62, 0);
+    boxAt(body, m.glow, 0.22, 0.008, 0.004, -0.02, -R.y * 0.62, 0.077);
+    boxAt(body, m.glow, 0.22, 0.008, 0.004, -0.02, -R.y * 0.62, -0.077);
   } else {
     // Round, pod and egg: an ellipsoid of armour bands like the eyeball, plates stepped in and out
     add(body, ellGeo(R, 0.975, 0, TAU, 0, Math.PI), m.core);
@@ -771,6 +808,35 @@ export function buildCat(p, root) {
     for (let k = 0; k < 4; k++) boxAt(pack, M.dark, 0.022, 0.012, 0.08, -0.06 + k * 0.04, y + 0.04, 0);
     rainScreen(pack, -0.02, y, 0.1 + r + 0.006, 0.1, 0.05);
     antennaY = y + r;
+  } else if (p.pack === 'rotor') {
+    // SCOUT: a hub on the back with four arms out to ducted rotors, and a small thruster for the boost
+    const y = 0.034 + 0.03;
+    add(pack, new THREE.CylinderGeometry(0.07, 0.08, 0.06, 18), finish, 0, y, 0);
+    add(pack, new THREE.TorusGeometry(0.076, 0.006, 4, 24).rotateX(Math.PI / 2), m.glow, 0, y + 0.031, 0);
+    add(pack, new THREE.CylinderGeometry(0.03, 0.03, 0.03, 12), M.chrome, 0, y + 0.045, 0);
+    [[1, 1], [1, -1], [-1, 1], [-1, -1]].forEach(function (q) {
+      const ax = q[0] * 0.2, az = q[1] * 0.25, len = Math.hypot(ax, az);
+      boxAt(pack, m.alt, len, 0.022, 0.03, ax / 2, y, az / 2, 0, -Math.atan2(az, ax), 0);
+      boxAt(pack, m.glow, len * 0.8, 0.004, 0.006, ax / 2, y + 0.013, az / 2, 0, -Math.atan2(az, ax), 0);
+      // Tilted outward like a drone's arms, which also turns them toward the viewer so they read as rings
+      const duct = group(pack, ax, y + 0.03, az);
+      duct.rotation.x = q[1] * 0.55;
+      duct.scale.setScalar(1.15);
+      add(duct, new THREE.TorusGeometry(0.088, 0.017, 6, 28).rotateX(Math.PI / 2), finish);
+      add(duct, new THREE.TorusGeometry(0.07, 0.004, 4, 28).rotateX(Math.PI / 2), m.glow, 0, 0.012, 0);
+      add(duct, new THREE.CylinderGeometry(0.022, 0.026, 0.04, 12), M.chrome, 0, -0.005, 0);
+      for (let k = 0; k < 3; k++) {   // spokes holding the motor in the duct
+        const a = k / 3 * TAU + 0.5;
+        boxAt(duct, M.dark, 0.07, 0.006, 0.008, Math.cos(a) * 0.045, -0.012, Math.sin(a) * 0.045, 0, -a, 0);
+      }
+      const fan = live(group(duct, 0, 0.012, 0));
+      fan.userData.axis = 'y';
+      for (let k = 0; k < 3; k++) boxAt(fan, M.sector, 0.15, 0.005, 0.028, 0, 0, 0, 0, k / 3 * TAU, 0.12);
+      fans.push(fan);
+    });
+    turbine(pack, 0.045, 0.2, -0.17, y + 0.005, 0);
+    rainScreen(pack, 0.0, y - 0.002, 0.082, 0.07, 0.035);
+    antennaY = y + 0.06;
   } else if (p.pack === 'single') {
     const r = 0.115, y = 0.034 + r;
     turbine(pack, r, 0.46, 0, y, 0);
@@ -825,6 +891,7 @@ export function buildCat(p, root) {
   // ===== Tail: a chain of armoured vertebrae with glowing bands, each joint swinging a little =====
   const TAILS = {
     curl: { n: 7, len: 0.085, r0: 0.04, r1: 0.022, bend: [0.15, 0.3, 0.4, 0.5, 0.55, 0.55, 0.5], tip: 'orb' },
+    whip: { n: 9, len: 0.07, r0: 0.022, r1: 0.011, bend: [-0.15, -0.05, 0.08, 0.18, 0.24, 0.26, 0.24, 0.2, 0.15], tip: 'beacon' },
     antenna: { n: 3, len: 0.08, r0: 0.05, r1: 0.04, bend: [0.4, 0.35, 0.3], tip: 'mast' },
     long: { n: 10, len: 0.085, r0: 0.032, r1: 0.016, bend: [0.05, 0.08, 0.08, 0.06, 0.03, 0, -0.04, -0.06, -0.06, -0.04], tip: 'blade' },
     stub: { n: 2, len: 0.07, r0: 0.075, r1: 0.062, bend: [0.3, 0.3], tip: 'cap' },
@@ -849,6 +916,11 @@ export function buildCat(p, root) {
     add(tip, new THREE.SphereGeometry(0.03, 10, 8), m.glow, -0.03, 0, 0);
     add(tip, new THREE.TorusGeometry(0.038, 0.006, 4, 16), M.chrome, -0.03, 0, 0);
     add(tip, ringX(0.038, 0.006, 16), M.chrome, -0.03, 0, 0);
+  } else if (tl.tip === 'beacon') {
+    // A blinking beacon in a small chrome cage
+    add(tip, new THREE.SphereGeometry(0.026, 10, 8), m.tip, -0.03, 0, 0);
+    add(tip, ringX(0.03, 0.005, 14), M.chrome, -0.03, 0, 0);
+    add(tip, new THREE.TorusGeometry(0.03, 0.005, 4, 14), M.chrome, -0.03, 0, 0);
   } else if (tl.tip === 'mast') {
     add(tip, new THREE.CylinderGeometry(0.012, 0.012, 0.3, 6).rotateZ(-1.2), M.chrome, -0.13, 0.05, 0);
     add(tip, new THREE.SphereGeometry(0.04, 10, 8), m.tip, -0.27, 0.1, 0);

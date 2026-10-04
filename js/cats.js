@@ -291,7 +291,10 @@ export function updateCats(t) {
     c.rainTex.offset.y = (t * 0.45 + c.phase) % 1;
     if (!reduceMotion) {
       // Turbine fans spin up with the boost
-      c.fans.forEach(function (f) { f.rotation.x += dt * (9 + c.boost * 45); });
+      c.fans.forEach(function (f) {
+        if (f.userData.axis === 'y') f.rotation.y += dt * (26 + c.boost * 40);   // SCOUT's rotors
+        else f.rotation.x += dt * (9 + c.boost * 45);
+      });
       // Legs dangle (and trail back when it bolts), the tail sways joint by joint
       c.legs.forEach(function (leg, k) { leg.rotation.z = leg.userData.rest + (hit ? -0.45 : 0) + Math.sin(ph * 1.3 + k * 1.7) * 0.1; });
       c.joints.forEach(function (j, k) { j.rotation.z = j.userData.rest + Math.sin(t * 2.4 - k * 0.55 + c.phase) * (hit ? 0.2 : 0.09); });
