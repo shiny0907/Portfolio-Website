@@ -43,9 +43,10 @@ setInterval(function () {
   }
 }, 200);
 
-function active() {
-  return fine && fine.matches && !cur.touch && state.hasPointer && !cur.slow;   // from the loading screen on, not just after boot
-}
+// Mouse and trackpad only. Once the pointer has been seen, the cursor stays drawn where it was last, even
+// after the pointer leaves the window or the window loses focus. (Browsers don't say where the pointer is
+// until it first moves, so until then only the coordinate readout shows, with dashes.)
+function mouseDevice() { return fine && fine.matches && !cur.touch; }
 // A canvas cursor can only be as smooth as the frame loop. If frames get slow (under about 10 fps)
 // hand back to the native cursor, and only take over again once things are smooth, so it never flickers.
 function trackFrameRate() {
@@ -117,22 +118,16 @@ function findTarget() {
     const sr = stage.getBoundingClientRect(), d = grid.dpr;
     return { key: 'track' + row.k, rect: { x: (row.x - sr.left) * d, y: (row.y - sr.top) * d, w: row.w * d, h: row.h * d }, label: 'TRACK ' + two(row.k + 1) };
   }
-  if (hit.dataset.click === 'card') return { key: 'card' + hit.dataset.k, rect: domRect(hit), even: true, label: 'CARD ' + two(+hit.dataset.k + 1) };
+  if (hit.dataset.click === 'card') return { key: 'card' + hit.dataset.k, rect: domRect(hit), label: 'CARD ' + two(+hit.dataset.k + 1) };
   return { key: 'el:' + (hit.id || hit.dataset.click || hit.dataset.cursor), rect: domRect(hit), label: hit.dataset.cursor || '' };
 }
 
-// Frame a target, centred on it. Most targets get a little room, sized up to whole grid squares.
-// The side labels (one letter wide), the ears (traced from their outline) and the portfolio cards get an exact gap
-// instead (rounding a big card up to whole squares left more room above and below than at the sides)
-function frameFor(r, side, tight, even) {
-  const C = grid.cell;
-  if (side || tight || even) {
-    const p = Math.round(C * (side ? 0.5 : even ? 0.35 : 0.25));   // half a square for the labels, a quarter for the ears
-    return { x: Math.round(r.x - p), y: Math.round(r.y - p), w: Math.round(r.w + 2 * p), h: Math.round(r.h + 2 * p) };
-  }
-  const pad = C * 0.25;
-  const w = Math.ceil((r.w + 2 * pad) / C) * C, h = Math.ceil((r.h + 2 * pad) / C) * C;
-  return { x: Math.round(r.x + r.w / 2 - w / 2), y: Math.round(r.y + r.h / 2 - h / 2), w: w, h: h };
+// Frame a target, centred on it, with the same gap on every side (rounding frames up to whole grid squares
+// left uneven gaps). The side labels (one letter wide) get half a square, the ears (traced from their outline)
+// a quarter, everything else 0.35 of a square.
+function frameFor(r, side, tight) {
+  const p = Math.round(grid.cell * (side ? 0.5 : tight ? 0.25 : 0.35));
+  return { x: Math.round(r.x - p), y: Math.round(r.y - p), w: Math.round(r.w + 2 * p), h: Math.round(r.h + 2 * p) };
 }
 
 function brackets(r, u, L, col) {
@@ -149,9 +144,12 @@ function brackets(r, u, L, col) {
 let coordScr = null;
 function drawCoords(fr, t) {
   const C = grid.cell, cpx = labelPx;
-  const ci = Math.floor((fr.x + fr.w / 2 - grid.ox) / C), cj = Math.floor((fr.y + fr.h / 2 - grid.oy) / C);
   const fmt = function (n) { const a = Math.abs(n); return (n < 0 ? '-' : '+') + (a < 10 ? '0' : '') + a; };
-  const str = 'X ' + fmt(ci) + '  Y ' + fmt(-cj);
+  let str = 'X ---  Y ---';   // pointer not seen yet
+  if (fr) {
+    const ci = Math.floor((fr.x + fr.w / 2 - grid.ox) / C), cj = Math.floor((fr.y + fr.h / 2 - grid.oy) / C);
+    str = 'X ' + fmt(ci) + '  Y ' + fmt(-cj);
+  }
   if (!coordScr || coordScr.length !== str.length) coordScr = makeScramble(str.length, t);
   const margin = Math.round(clamp(grid.w / grid.dpr * 0.03, 16, 48) * grid.dpr);   // same as the top corners
   drawPixelText(ctx, str, grid.w - margin - pixelTextWidth(str, cpx), grid.h - margin - 7 * cpx, cpx, function (k) {
@@ -167,13 +165,17 @@ export function drawCursor(t) {
   if (t < cur.lastT - 0.05) { cur.flyStart = -1; cur.trail = []; cur.scrText = ''; cur.labelScr = null; coordScr = null; }
   cur.lastT = t;
   cur.lastDraw = performance.now();   // the loop is alive
-  if (!active()) { root.classList.remove('cursor-on'); return; }
-  root.classList.add('cursor-on');
+  if (!mouseDevice()) { root.classList.remove('cursor-on'); return; }
+  if (state.hasPointer) cur.seen = true;
+  if (!cur.seen) { root.classList.remove('cursor-on'); drawCoords(null, t); return; }
 
   const C = grid.cell, d = grid.dpr;
   const u = Math.max(2, Math.round(1.5 * d));                 // one pixel of the cursor
   const mx = (state.mouse.x + 1) / 2 * grid.w, my = (1 - state.mouse.y) / 2 * grid.h;
   const ci = Math.floor((mx - grid.ox) / C), cj = Math.floor((my - grid.oy) / C);
+  // Slow frames: the system cursor takes over (a canvas cursor would lag), but the readout keeps counting
+  if (cur.slow) { root.classList.remove('cursor-on'); drawCoords({ x: grid.ox + ci * C, y: grid.oy + cj * C, w: C, h: C }, t); return; }
+  root.classList.add('cursor-on');
 
   // Trail: fast moves leave a few faint squares along the path, gone in a quarter second
   if (!reduceMotion && !state.firing && cur.lastCell) {
@@ -199,7 +201,7 @@ export function drawCursor(t) {
   else if (cur.lastTg && t - cur.lastTgAt < 0.15 && !state.firing) tg = cur.lastTg;
   const cell = { x: grid.ox + ci * C, y: grid.oy + cj * C, w: C, h: C };
   const key = tg && tg.rect ? tg.key : 'cell';
-  const goal = tg && tg.rect ? frameFor(tg.rect, tg.side, tg.tight, tg.even) : cell;
+  const goal = tg && tg.rect ? frameFor(tg.rect, tg.side, tg.tight) : cell;
   if (key !== cur.key) {
     // Fly between the old frame and the new one (rest -> lock, lock -> lock, lock -> rest)
     cur.from = cur.to ? cur.to : goal;

@@ -121,11 +121,15 @@ function spawn(c, t) {
   c.facing = -side;
   c.state = 'enter';
   c.boost = 0;
-  c.group.visible = true;
-  c.group.scale.setScalar(bounds.scale);
   pickWaypoint(c);
   if (reduceMotion) { c.pos.copy(c.wp); c.state = 'fly'; }
   c.nextWp = t + 3 + Math.random() * 3;
+  // Put it in place before it shows: it's drawn this frame, before the pose update next frame
+  // (otherwise it flashes at the scene origin, the middle of the screen)
+  c.group.position.copy(c.pos);
+  c.group.scale.set(bounds.scale * c.facing, bounds.scale, bounds.scale);
+  c.group.rotation.set(0, 0, 0);
+  c.group.visible = true;
 }
 function offscreen(c) {
   const m = 1.4 * bounds.scale;
