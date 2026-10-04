@@ -20,7 +20,6 @@ import { updateContact } from './contact.js';
 import { updateCats } from './cats.js';
 import { runLoader } from './loader.js';
 import { drawCursor } from './cursor.js';
-import { updateSound } from './sound.js';
 
 // The rings that step on the beat
 beatRings[0].obj = tickGroup;
@@ -65,7 +64,6 @@ function frame() {
 
   renderFrame(t);
   drawCursor(t);
-  updateSound();
 }
 
 function startScene() {

@@ -60,15 +60,6 @@
     white-space: nowrap;
   }
   .hint { z-index: 3; }
-  /* Sound toggle: a small pixel speaker in the bottom-left corner, lined up with the corner texts */
-  .sound-toggle {
-    position: fixed; left: var(--edge); bottom: calc(var(--edge) + env(safe-area-inset-bottom, 0px)); z-index: 4;
-    display: grid; place-items: center;
-    margin: 0; padding: 8px; margin-left: -8px; margin-bottom: -8px;
-    background: none; border: 0; cursor: pointer;
-  }
-  .sound-toggle canvas { display: block; image-rendering: pixelated; }
-  .sound-toggle:focus-visible { outline: 1px solid var(--red); outline-offset: 2px; }
   /* ---------- About page (left of the hero) ---------- */
   .about {
     position: fixed; top: 0; left: 0; bottom: 0;

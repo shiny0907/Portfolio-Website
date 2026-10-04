@@ -8,7 +8,6 @@ import { contactEl, contactEnter } from './contact.js';
 import { rig } from './eye/eyeball.js';
 import { hud, aura } from './eye/hud.js';
 import { EYE_PARK_X, EYE_PARK_Y } from './layout.js';
-import { sfx } from './sound.js';
 
 // Each label opens its page and becomes BACK; BACK returns to the hero.
 const LABEL_PAGE = ['about', 'portfolio', 'contact'];
@@ -35,7 +34,6 @@ function goPage(name) {
   page.vertical = page.toQ !== page.fromQ;
   page.start = t;
   page.moving = true;
-  sfx('whoosh');
   // A fresh tear pattern each time: each row's (or column's) edge sits 0 to 2 squares ahead, varying smoothly
   let v = Math.random() * 3;
   for (let j = 0; j < 64; j++) { v = clamp(v + (Math.random() - 0.5) * 1.6, 0, 2.99); page.jag[j] = Math.floor(v); }

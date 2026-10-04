@@ -53,7 +53,7 @@ if (window.__ptr && window.__ptr.pointerType !== 'touch') setPointer(window.__pt
 window.addEventListener('pointerdown', function (e) {
   setPointer(e);
   if (e.button !== 0) return;
-  if (e.target && e.target.closest && e.target.closest('[data-nofire]')) return;   // UI buttons (sound toggle) never fire
+  if (e.target && e.target.closest && e.target.closest('[data-nofire]')) return;   // UI buttons never fire
   if (e.target === renderer.domElement) {
     try { renderer.domElement.setPointerCapture(e.pointerId); } catch (err) { /* capture is optional */ }
   }

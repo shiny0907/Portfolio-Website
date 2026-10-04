@@ -11,7 +11,6 @@ import { LOOK_PLANE_Z } from './gaze.js';
 import { beamInfo } from './eye/laser.js';
 import { rig } from './eye/eyeball.js';
 import { contactContentRect } from './contact.js';
-import { sfx } from './sound.js';
 import { PRESETS, buildCat } from './cat-model.js';
 
 // The cats are built in cat-model.js; this module flies them. Phones get the first three.
@@ -47,8 +46,8 @@ function measure() {
   bounds.halfH = (camBase.z - bounds.z) * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
   bounds.halfW = bounds.halfH * camera.aspect;
   bounds.pxPerUnit = (h / 2) / bounds.halfH;
-  // About 14% of the shorter screen side from nose to tail
-  bounds.scale = clamp(Math.min(w, h) * 0.14, 64, 150) / bounds.pxPerUnit / 1.2;
+  // About 10% of the shorter screen side from nose to tail
+  bounds.scale = clamp(Math.min(w, h) * 0.1, 48, 110) / bounds.pxPerUnit / 1.2;
 }
 function activeCount() { return (stage.clientWidth || window.innerWidth) < 700 ? 3 : 5; }
 
@@ -91,7 +90,7 @@ function noFlyBoxes() {
 function pickWaypoint(c) {
   const boxes = noFlyBoxes();
   for (let k = 0; k < 40; k++) {
-    // (clear of the corner texts, the sound toggle and the cursor readout)
+    // (clear of the corner texts and the cursor readout)
     const x = (Math.random() * 2 - 1) * bounds.halfW * 0.86, y = (Math.random() * 1.35 - 0.65) * bounds.halfH;
     const blocked = boxes.some(function (b) { return inBox(x, y, b) || (segHitsBox(c.pos.x, c.pos.y, x, y, b) && !inBox(c.pos.x, c.pos.y, b)); });
     // ...not where another cat is already heading, so they spread out instead of bunching up,
@@ -161,7 +160,6 @@ function flee(c, t) {
   _a.normalize();
   c.fleeDir = new THREE.Vector3(_a.x, _a.y + 0.35, 0).normalize();
   c.respawnAt = t + 4 + Math.random() * 4;
-  sfx('boost');
 }
 
 // Where a cat is on screen, for the cursor's target lock (grid-canvas device pixels)

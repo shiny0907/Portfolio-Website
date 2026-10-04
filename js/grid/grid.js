@@ -1,7 +1,7 @@
 import { stage, renderer, camera, reduceMotion, TAU, lerp } from '../core.js';
 import { page } from '../pages.js';
 import { photoHit, drawPhotoOnGrid } from '../about.js';
-import { NAME_COLS, nameMap, drawName } from './name.js';
+import { NAME_COLS, nameMap, drawName, drawBreachFx } from './name.js';
 import { drawLabels } from './labels.js';
 import { drawCorners } from './corners.js';
 import { drawContactBeam } from '../contact.js';
@@ -146,6 +146,9 @@ export function updateGrid(t, dt) {
 
   // Corners, and the occasional text glitch
   drawCorners(ctx, t);
+
+  // The breach's shockwaves, error log and screen tearing, over everything
+  drawBreachFx(ctx, t);
 }
 
 function drawTear(ctx, t) {

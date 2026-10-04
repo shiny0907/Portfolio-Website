@@ -5,7 +5,6 @@ import { grid } from './grid/grid.js';
 import { scrLeft, scrRight, CORNER_LEFT, CLOCK_PLACE } from './grid/corners.js';
 import { ears, earTwitch } from './eye/ears.js';
 import { glanceAt, cancelGlance } from './gaze.js';
-import { sfx } from './sound.js';
 
 // ---------- Click reactions ----------
 // Clicking the eye plays one of five reactions (never the same one twice in a row).
@@ -29,7 +28,6 @@ export function eyePoke(t) {
     state.shakeUntil = t + 0.55;
     state.vRecoil -= 2.5;
     state.react = null;
-    sfx('annoyed');
     return;
   }
   startEyeReaction(pickFrom(EYE_REACTIONS, lastEyeReaction), t);
@@ -39,7 +37,6 @@ export function startEyeReaction(type, t) {
   if (!state.booted) return;
   lastEyeReaction = type;
   state.react = { type: type, start: t, dur: EYE_REACT_DUR[type], done: {} };
-  sfx(type);
   if (type === 'flinch') {
     // Recoils back into the screen, pupil snaps shut, double blink, ears flatten
     state.vRecoil -= 4.5;
@@ -108,7 +105,6 @@ export function earPoke(ear, t) {
   if (!state.booted) return;
   const type = pickFrom(EAR_REACTIONS, ear.lastReaction);
   ear.lastReaction = type;
-  sfx('ear-' + type);
   const other = ears.find(function (e2) { return e2 !== ear; });
   const look = { yaw: ear.side * 0.55, pitch: 0.5 };
   glanceAt(look, 0.7);
