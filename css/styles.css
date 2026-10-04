@@ -129,8 +129,8 @@
   }
   .about-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
   .about.is-narrow .about-cols { grid-template-columns: 1fr; }
-  .about-edu { margin: 12px 0 0; font-size: 0.9375rem; line-height: 1.55; color: var(--ink); }
-  .about-edu strong { color: var(--name); font-weight: 500; }
+  .about-body .about-edu { margin: 12px 0 0; font-size: 0.9375rem; line-height: 1.55; color: var(--ink); }
+  .about-body .about-edu strong { color: var(--name); font-weight: 500; }
   .tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
   .tags span { padding: 5px 9px; font-size: 0.8125rem; color: var(--ink); border: 1px solid rgba(201, 212, 222, 0.24); }
   /* ---------- Portfolio page (right of the hero) ---------- */

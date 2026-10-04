@@ -6,7 +6,7 @@ import { state } from '../state.js';
 import { grid } from './grid.js';
 import { SIDE_LABELS, labelGlyphs, labelPx } from './labels.js';
 
-const CLOCK_APPEAR = reduceMotion ? 0 : 1.1;
+export const CLOCK_APPEAR = reduceMotion ? 0 : 1.1;
 export const CORNER_LEFT = 'UI/UX DESIGNER';
 export const CLOCK_PLACE = 'WASHINGTON DC';
 export const CORNER_STATUS = 'OPEN TO WORK';

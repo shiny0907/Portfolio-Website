@@ -10,6 +10,7 @@ import { rig } from './eye/eyeball.js';
 import { trackRowAt } from './portfolio.js';
 import { POKE_MAX } from './input.js';
 import { catAt } from './cats.js';
+import { CLOCK_APPEAR } from './grid/corners.js';
 
 const root = document.documentElement;
 const fine = window.matchMedia ? window.matchMedia('(pointer: fine)') : null;
@@ -141,8 +142,10 @@ function brackets(r, u, L, col) {
 
 // Bottom-right corner: which grid square the red frame is on, counted from the centre square of the site (0, 0).
 // Y counts up, like a graph. Locked onto a target, it reads the target's centre square.
-let coordScr = null;
+// It decodes in with the other corner texts, never during the loading screen.
+let coordScr = null, coordsOn = false;
 function drawCoords(fr, t) {
+  if (!coordsOn || t < CLOCK_APPEAR) return;
   const C = grid.cell, cpx = labelPx;
   const fmt = function (n) { const a = Math.abs(n); return (n < 0 ? '-' : '+') + (a < 10 ? '0' : '') + a; };
   let str = 'X ---  Y ---';   // pointer not seen yet
@@ -150,7 +153,7 @@ function drawCoords(fr, t) {
     const ci = Math.floor((fr.x + fr.w / 2 - grid.ox) / C), cj = Math.floor((fr.y + fr.h / 2 - grid.oy) / C);
     str = 'X ' + fmt(ci) + '  Y ' + fmt(-cj);
   }
-  if (!coordScr || coordScr.length !== str.length) coordScr = makeScramble(str.length, t);
+  if (!coordScr || coordScr.length !== str.length) coordScr = makeScramble(str.length, coordScr ? t : CLOCK_APPEAR);
   const margin = Math.round(clamp(grid.w / grid.dpr * 0.03, 16, 48) * grid.dpr);   // same as the top corners
   // Inside a case study it sits over the machine room: a thin dark halo keeps it readable
   if (state.dive.open) { ctx.shadowColor = 'rgba(5, 7, 10, 0.95)'; ctx.shadowBlur = Math.round(4 * grid.dpr); }
@@ -160,7 +163,8 @@ function drawCoords(fr, t) {
   ctx.shadowBlur = 0;
 }
 
-export function drawCursor(t) {
+export function drawCursor(t, loading) {
+  coordsOn = !loading;
   if (cv.width !== grid.w || cv.height !== grid.h) { cv.width = grid.w; cv.height = grid.h; }
   ctx.clearRect(0, 0, cv.width, cv.height);
   trackFrameRate();

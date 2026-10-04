@@ -162,7 +162,7 @@ export function runLoader(startScene) {
     if (lt < T.split) {
       drawBoot(lt);
       g.drawImage(frame, 0, 0);
-      drawCursor(nowSec());   // the custom cursor is there from the start (the scene's frame loop takes over below)
+      drawCursor(nowSec(), true);   // the custom cursor is there from the start (the scene's frame loop takes over below)
     } else {
       if (!started) { started = true; startScene(); }
       if (reduceMotion) {

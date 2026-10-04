@@ -1,6 +1,6 @@
 // Inside the eye: the machine room around a case study. Two tall strips of machinery fill the side margins:
 // the inside wall of the eye (armour plates with red seams), a truss girder, gear trains that really mesh and
-// tick on the eye's clock, hydraulic pistons, pipes and cable bundles, pressure gauges, and four CRT monitors
+// turn with the scroll, hydraulic pistons, pipes and cable bundles, pressure gauges, and four CRT monitors
 // with information worth reading (a section index and this visit's stats). The strips stay put while the
 // page scrolls; the gears turn with the scroll.
 // Nothing sits behind the text column, and it hides when the margins are too thin (phones).
@@ -322,10 +322,10 @@ export function updateInterior(t) {
     // Fixed in place (Shining asked): the top of the strip (local y 0.9) sits near the top of the screen
     s.position.set(side * (PANEL_HALF / (vh / 2) + 0.04) * H, (0.86 - 0.9 * sc) * H, DEPTH);
   });
-  // Gears tick on the eye's clock (the HUD's second hand) and turn with the scroll
+  // Gears (and the pistons they drive) only turn when the page scrolls (Shining asked); still otherwise
   if (!reduceMotion) scrollSpin += (scroll - lastScroll) * 0.004;
   lastScroll = scroll;
-  const master = reduceMotion ? 0 : beatRings[3].angle * 3 + scrollSpin;
+  const master = reduceMotion ? 0 : scrollSpin;
   gears.forEach(function (g) { g.g.rotation.z = master * g.ratio + g.phase; });
   pistons.forEach(function (p) { p.rod.position.y = p.y0 - (reduceMotion ? 0 : (Math.sin(master * 2 + p.phase) * 0.5 + 0.5) * p.amp); });
 
@@ -338,7 +338,7 @@ export function updateInterior(t) {
   view.k = Math.max(0, state.dive.idx);
   // Gauges: one reads how far down the page you are, the others breathe with the clock
   gauges.forEach(function (g, k) {
-    const v = k % 2 ? view.prog : 0.5 + 0.35 * Math.sin(master * 0.7 + g.phase);
+    const v = k % 2 ? view.prog : 0.5 + 0.35 * Math.sin((reduceMotion ? 0 : beatRings[3].angle * 3) * 0.7 + g.phase);
     g.needle.rotation.z = Math.PI * 0.75 - clamp(v, 0, 1) * Math.PI * 1.5;
   });
   if (t - lastFeed > 1 / 12 || (reduceMotion && t - lastFeed > 1)) {
