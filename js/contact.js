@@ -1,5 +1,5 @@
 // Contact page (above the hero): a status line that opens the channel, the email in big pixel type that copies
-// on click, and a stream of data packets running from the parked eye up to the page
+// on click, pixel-art social links, and a stream of data packets running from the parked eye up to the page
 import { stage, reduceMotion, nowSec, clamp } from './core.js';
 import { makeScramble, glitchRun, drawPixelText, pixelTextWidth, LABEL_COLOR } from './pixel-font.js';
 import { state } from './state.js';
@@ -104,6 +104,40 @@ function copyEmail() {
 emailBtn.addEventListener('click', copyEmail);
 copyBtn.addEventListener('click', copyEmail);
 
+// ---- Social links: pixel-art icons that brighten with a red glitch shadow on hover ----
+const ICONS = {
+  linkedin: ['.#########.', '###########', '##.########', '###########', '##.##...###', '##.##.##.##',
+    '##.##.##.##', '##.##.##.##', '##.##.##.##', '###########', '.#########.'],
+  instagram: ['.#########.', '#.........#', '#.......#.#', '#...###...#', '#..#...#..#', '#..#...#..#',
+    '#..#...#..#', '#...###...#', '#.........#', '#.........#', '.#########.'],
+  tiktok: ['......#....', '......##...', '......#.##.', '......#..##', '......#....', '......#....',
+    '...####....', '..#####....', '..#####....', '...###.....', '...........']
+};
+const socials = Array.prototype.map.call(document.querySelectorAll('.ct-social'), function (a) {
+  const s = { el: a, cv: a.querySelector('canvas'), rows: ICONS[a.dataset.icon], over: false, hover: 0, jit: 0 };
+  const on = function () { if (!s.over && page.target === 'contact' && !page.moving) { const r = a.getBoundingClientRect(); glanceAt({ x: r.left + r.width / 2, y: r.top + r.height / 2 }, 0.5); } s.over = true; };
+  const off = function () { s.over = false; };
+  a.addEventListener('pointerenter', on); a.addEventListener('pointerleave', off);
+  a.addEventListener('focus', on); a.addEventListener('blur', off);
+  return s;
+});
+function drawSocial(s, t, dt) {
+  const d = grid.dpr || 1, px = Math.max(2, Math.round(3 * d)), n = s.rows.length;
+  fitCanvas(s.cv, (n + 2) * px, n * px);
+  s.hover += ((s.over ? 1 : 0) - s.hover) * Math.min(1, dt * (s.over ? 12 : 6));
+  const g = s.cv.getContext('2d');
+  g.clearRect(0, 0, s.cv.width, s.cv.height);
+  const paint = function (ox, col) {
+    g.fillStyle = col;
+    s.rows.forEach(function (row, y) { for (let x = 0; x < row.length; x++) if (row[x] === '#') g.fillRect(ox + x * px, y * px, px, px); });
+  };
+  // A red copy one pixel to the side, like the labels' glitch shadow, and the odd sideways jump while hovered
+  if (s.over && !reduceMotion && Math.random() < 0.06) s.jit = t + 0.06;
+  const jump = t < s.jit ? px : 0;
+  if (s.hover > 0.05) { g.globalAlpha = 0.85 * s.hover; paint(0, '#ff0a1e'); g.globalAlpha = 1; }
+  paint((s.hover > 0.05 ? px : 0) + jump, LEVELS[Math.round(s.hover * 8)]);   // hovered, the icon steps off its shadow
+}
+
 // ---- Drawing ----
 function fitCanvas(cv, W, H) {
   const d = grid.dpr || 1;
@@ -175,6 +209,7 @@ export function updateContact(t) {
   ct.contentBottom = last.bottom;
   drawStatus(t);
   drawEmail(t);
+  socials.forEach(function (s) { drawSocial(s, t, dt); });
 }
 
 // On the grid layer (behind the eye): a channel of squares from the parked eye up to the page, with packets
