@@ -17,7 +17,7 @@ const pfCarousel = document.getElementById('pfCarousel');
 const pfInner = pfEl.querySelector('.pf-inner');
 const pfTitle = document.getElementById('pfTitle'), pfTitleCtx = pfTitle.getContext('2d');
 const pfTrack = document.getElementById('pfTrack'), pfTrackCv = document.getElementById('pfTrackCv'), pfTrackCtx = pfTrackCv.getContext('2d');
-const car = { pos: 0, vel: 0, target: 0, cur: -1, acc: 0, last: 0, h0: 200, w0: 320, titleScr: null, titleText: '' };
+const car = { pos: 0, vel: 0, target: 0, cur: -1, h0: 200, w0: 320, titleScr: null, titleText: '' };
 const pfCards = PROJECTS.map(function (pr, k) {
   const el = document.createElement('div');
   el.className = 'pf-card';
@@ -165,17 +165,33 @@ export function showProject(k) {
   car.pos = car.target;
   car.vel = 0;
 }
-// Scroll wheel / trackpad moves one project per notch, with a short cooldown so trackpads don't race
+// Scroll wheel / trackpad: one project per notch or swipe, same rules as the page swipes in pages.js.
+// After a step, more motion the same way (a trackpad's momentum) is ignored until the stream breaks, and
+// the same way can't step twice within 140 ms. Reversing works at once and starts from zero, so leftover
+// momentum can never carry the carousel the wrong way.
+const wheel = { acc: 0, lastAt: 0, dir: 0, blockDir: 0, firedAt: -1e9, firedDir: 0, interval: 16 };
 window.addEventListener('wheel', function (e) {
   if (page.target !== 'portfolio' || caseActive()) return;   // inside a case study the wheel scrolls the page
   e.preventDefault();
-  car.acc += e.deltaY;
-  const now = performance.now();
-  if (Math.abs(car.acc) > 40 && now - car.last > 220) {
-    pfStep(Math.sign(car.acc));
-    car.acc = 0;
-    car.last = now;
-  }
+  const scale = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 400 : 1;
+  const d = e.deltaY * scale;
+  if (!d || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;   // sideways swipes belong to pages.js
+  const now = performance.now(), dir = Math.sign(d), gap = now - wheel.lastAt;
+  const isBreak = gap > Math.max(80, wheel.interval * 4);
+  if (!isBreak) wheel.interval += (Math.min(gap, 200) - wheel.interval) * 0.2;
+  if (isBreak) wheel.blockDir = 0;
+  if (isBreak || dir !== wheel.dir) wheel.acc = 0;
+  wheel.lastAt = now;
+  wheel.dir = dir;
+  if (dir === wheel.blockDir) return;
+  wheel.acc += d;
+  if (Math.abs(wheel.acc) < 40) return;
+  wheel.acc = 0;
+  wheel.blockDir = dir;
+  if (now - wheel.firedAt < 140 && dir === wheel.firedDir) return;
+  wheel.firedAt = now;
+  wheel.firedDir = dir;
+  pfStep(dir);
 }, { passive: false });
 window.addEventListener('keydown', function (e) {
   if (page.target !== 'portfolio' || caseActive()) return;
