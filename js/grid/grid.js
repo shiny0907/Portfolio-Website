@@ -2,7 +2,7 @@ import { stage, renderer, camera, reduceMotion, TAU, lerp } from '../core.js';
 import { page } from '../pages.js';
 import { state } from '../state.js';
 import { photoHit, drawPhotoOnGrid } from '../about.js';
-import { NAME_COLS, nameMap, drawName, drawBreachFx } from './name.js';
+import { NAME_COLS, nameMap, drawName, drawBreachFx, breachBlocks } from './name.js';
 import { drawLabels } from './labels.js';
 import { drawCorners } from './corners.js';
 import { drawContactBeam } from '../contact.js';
@@ -51,6 +51,7 @@ export function projectToGrid(x, y, z) {
 }
 
 function igniteCell(i, j, t, gen) {
+  if (breachBlocks(i, j, t)) return;
   const key = KEY(i, j);
   // A direct laser hit destroys a square of the name for good; spreading cracks can't touch it
   const nb = nameMap.get(KEY(i - grid.nameShift, j - grid.nameShiftY));

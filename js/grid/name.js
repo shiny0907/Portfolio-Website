@@ -120,7 +120,6 @@ export function drawName(ctx, t) {
   }
   ctx.globalAlpha = 1;
   drawFlying(ctx, t, ns, nsy);
-  drawBreachMessage(ctx, t);
 }
 
 // ---------- Breach: laser off every square of the name and the whole system goes to red alert ----------
@@ -196,6 +195,13 @@ function updateBreach(t) {
     return;
   }
   const e = t - breach.start;
+  // The first shockwave blows away the laser burns as it passes, so the message lands on a clean screen
+  if (e < B_MSG + 0.3 && grid.cells.size) {
+    const cen = nameCentre(), R = reduceMotion ? 1e9 : e * 70 - 1;
+    grid.cells.forEach(function (c, key) {
+      if (Math.hypot(c.i + 0.5 - cen[0], (c.j + 0.5 - cen[1]) * 1.15) < R) grid.cells.delete(key);
+    });
+  }
   if (!breach.slammed && e >= B_MSG) {
     // The message lands with a jolt
     breach.slammed = true;
@@ -271,13 +277,24 @@ function drawAlarm(ctx, t) {
 }
 
 // SYSTEM BREACH on the name's own squares (full squares when it fits, half squares on narrow screens)
-function drawBreachMessage(ctx, t) {
-  if (!breach.active || !breach.msg || t - breach.start >= B_FLY) return;
+function msgLayout() {
   const C = grid.cell, units = pixelTextWidth(BREACH_MSG, 1) - 1;
   const px = units * C <= grid.w * 0.94 ? C : Math.max(1, Math.floor(C / 2));
   const cen = nameCentre();
-  const left = grid.ox + Math.round(cen[0] - units * px / C / 2) * C;
-  const top = grid.oy + Math.round(cen[1] - 7 * px / C / 2) * C;
+  const i = Math.round(cen[0] - units * px / C / 2), j = Math.round(cen[1] - 7 * px / C / 2);
+  return { px: px, i: i, j: j, w: Math.ceil(units * px / C), h: Math.ceil(7 * px / C) };
+}
+// While the message is up, the laser can't burn the message's box (plus a square round it), so red burns
+// never run into the red letters
+export function breachBlocks(i, j, t) {
+  if (!breach.active || !breach.msg || t - breach.start >= B_FLY) return false;
+  const L = msgLayout();
+  return i >= L.i - 1 && i <= L.i + L.w && j >= L.j - 1 && j <= L.j + L.h;
+}
+function drawBreachMessage(ctx, t) {
+  if (!breach.active || !breach.msg || t - breach.start >= B_FLY) return;
+  const C = grid.cell, L = msgLayout(), px = L.px;
+  const left = grid.ox + L.i * C, top = grid.oy + L.j * C;
   let x = left;
   for (let k = 0; k < BREACH_MSG.length; k++) {
     const ch = BREACH_MSG[k], c = breach.msg[k], age = t - c.start;
@@ -382,6 +399,7 @@ export function drawBreachFx(ctx, t) {
   const reach = Math.hypot(grid.w, grid.h) / grid.cell;
   drawShock(ctx, t, breach.start, 70, reach, 1);
   if (breach.finalAt > 0) drawShock(ctx, t, breach.finalAt, 45, reach * 0.4, 0.55);
+  drawBreachMessage(ctx, t);   // over the burns, so it never blends into them
   drawLog(ctx, t);
   // The screen tears: bands of the grid layer slide sideways, in bursts
   const e = t - breach.start;
