@@ -58,7 +58,7 @@ function alignZ(m, dir) { m.quaternion.setFromUnitVectors(_zAxis, dir.clone().no
 
 // ---------- Merging ----------
 const _inv = new THREE.Matrix4();
-function bake(root) {
+export function bake(root) {
   root.updateMatrixWorld(true);
   _inv.copy(root.matrixWorld).invert();
   const buckets = new Map(), dead = [], lives = [];

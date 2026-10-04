@@ -200,7 +200,8 @@ export function updateCase(t) {
     dive.center = rm ? 1 : easeOut(clamp(e / 0.6, 0, 1));
     dive.wide = dive.face;
     dive.z = rm ? 0 : easeIn(clamp((e - IN.zoom0) / (IN.zoom1 - IN.zoom0), 0, 1));
-    dive.pix = rm || e < IN.pix0 ? 0 : PIX[Math.min(PIX.length - 1, Math.floor((e - IN.pix0) / ((IN.cover - IN.pix0) / PIX.length)))];
+    // (only until the pupil covers the screen: the machine room inside is drawn sharp)
+    dive.pix = rm || e < IN.pix0 || e >= IN.cover ? 0 : PIX[Math.min(PIX.length - 1, Math.floor((e - IN.pix0) / ((IN.cover - IN.pix0) / PIX.length)))];
     const cover = rm ? 0 : IN.cover;
     dive.hidden = e >= cover;
     dive.fade = dive.face;
@@ -213,7 +214,7 @@ export function updateCase(t) {
       const back = inner.querySelector('.case-back');
       if (back) try { back.focus({ preventScroll: true }); } catch (err) { /* focus is a nicety */ }
     }
-    if (e >= (rm ? 0.3 : IN.done)) { dive.dir = 0; veilAmt = 0; }
+    if (e >= (rm ? 0.3 : IN.done)) { dive.dir = 0; dive.pix = 0; veilAmt = 0; }
   } else if (dive.dir === -1) {
     const rm = reduceMotion;
     const cover = rm ? 0.15 : OUT.cover;

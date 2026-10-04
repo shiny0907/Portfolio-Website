@@ -18,6 +18,7 @@ import { updateAbout } from './about.js';
 import { updatePortfolio } from './portfolio.js';
 import { updateContact } from './contact.js';
 import { updateCase } from './case.js';
+import { updateInterior } from './interior.js';
 import { updateCats } from './cats.js';
 import { runLoader } from './loader.js';
 import { drawCursor } from './cursor.js';
@@ -45,6 +46,7 @@ function frame() {
 
   updatePage(t);
   updateCase(t);
+  updateInterior(t, dt);
   updateTravel(dt);
   updateFireZone();
   const tracking = updateGaze(t, dt);

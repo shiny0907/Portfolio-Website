@@ -6,6 +6,7 @@ import { drawLabels } from './labels.js';
 import { drawCorners } from './corners.js';
 import { drawContactBeam } from '../contact.js';
 import { drawCatTrails } from '../cats.js';
+import { drawInteriorRain } from '../interior.js';
 
 // ---------- The grid universe behind everything ----------
 // An invisible lattice of perfect squares. Where the laser hits, squares burn solid red,
@@ -116,6 +117,9 @@ export function updateGrid(t, dt) {
 
   // The name (slides off to the right in whole squares when the About page opens)
   drawName(ctx, t);
+
+  // Inside a case study: matrix rain in the margins, behind the machinery
+  drawInteriorRain(ctx, t);
 
   // Your photo (About page), on the grid layer so the laser can knock squares out of it
   drawPhotoOnGrid(ctx, t);
