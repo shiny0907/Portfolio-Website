@@ -75,7 +75,7 @@ export function contactLookPoint() {
 // ---- Copying the address ----
 function copied(ok) {
   const t = nowSec();
-  note.textContent = ok ? 'COPIED TO CLIPBOARD' : 'COPY BLOCKED. USE EMAIL ME INSTEAD';
+  note.textContent = ok ? 'COPIED TO CLIPBOARD' : 'COPY BLOCKED. THE ADDRESS IS ABOVE';
   ct.noteUntil = t + 2.6;
   if (!ok) return;
   ct.copiedAt = t;
