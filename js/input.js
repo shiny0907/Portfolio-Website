@@ -107,10 +107,13 @@ export function updateFireZone() {
   eyeE.set(rig.position.x + EYE_NO_FIRE_R, rig.position.y, rig.position.z).project(camera);
   const sw = stage.clientWidth / 2, sh = stage.clientHeight / 2;
   const rpx = (eyeE.x - eyeC.x) * sw;
-  const inside = Math.hypot((state.mouse.x - eyeC.x) * sw, (state.mouse.y - eyeC.y) * sh) < rpx;
+  // Inside a case study the eye is hidden (and pushed up against the screen from the dive), so it and its
+  // ears aren't there to hover, poke or block the cursor
+  const inCase = caseActive();
+  const inside = !inCase && Math.hypot((state.mouse.x - eyeC.x) * sw, (state.mouse.y - eyeC.y) * sh) < rpx;
   // Is the cursor on an ear or on the eyeball? (both can be clicked)
   state.overEar = null;
-  if (state.hasPointer && state.booted && !state.firing) {
+  if (state.hasPointer && state.booted && !state.firing && !inCase) {
     raycaster.setFromCamera(state.mouse, camera);
     for (let i = 0; i < ears.length; i++) {
       if (raycaster.intersectObject(ears[i].pivot, true).length) { state.overEar = ears[i]; break; }
