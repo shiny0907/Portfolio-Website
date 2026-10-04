@@ -96,3 +96,11 @@ export function updateBeatRings(dt) {
   }
   state.beatPulse *= Math.exp(-dt * 5);
 }
+
+// The case study dive (driven by case.js). dir 1 going in, -1 coming out, 2 swapping to another case study, 0 settled.
+// The eye reads face / center / z / wide / hidden, and the renderer reads pix.
+export const dive = {
+  dir: 0, start: -10, open: false, idx: -1, pushed: false, pending: -1, returnFocus: null, swapTo: -1,
+  face: 0, center: 0, z: 0, wide: 0, pix: 0, hidden: false, fade: 0
+};
+state.dive = dive;

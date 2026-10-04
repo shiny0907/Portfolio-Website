@@ -112,6 +112,8 @@ export function updateGaze(t, dt) {
   if (state.firing) glance.until = 0;
   const glancing = t < glance.until;
   if (glancing) { state.sweep = null; aimGlance(); }
+  // Diving into a case study: it turns to look straight out of the screen
+  if (state.dive.face > 0) { state.tYaw *= 1 - state.dive.face; state.tPitch *= 1 - state.dive.face; }
 
   // Servo spring, slightly underdamped so it overshoots and settles like a motor
   const k = state.firing ? 150 : (tracking || glancing) ? 95 : state.sweep ? 60 : 170;

@@ -1,4 +1,4 @@
-import { stage, reduceMotion, nowSec, clamp, lerp, camBase } from './core.js';
+import { stage, reduceMotion, clamp, lerp, camBase } from './core.js';
 import { makeScramble, drawPixelText, pixelTextWidth, LABEL_COLOR } from './pixel-font.js';
 import { state } from './state.js';
 import { page } from './pages.js';
@@ -6,6 +6,7 @@ import { grid } from './grid/grid.js';
 import { labelGeo, LABEL_Z } from './grid/labels.js';
 import { EYE_PARK_X } from './layout.js';
 import { PROJECTS } from './projects.js';
+import { openCase, caseActive } from './case.js';
 import { glanceAt } from './gaze.js';
 
 export const pfEl = document.getElementById('pf');
@@ -153,14 +154,20 @@ export function pfClick(el) {
     o = ((o % PN) + PN) % PN; if (o > PN / 2) o -= PN;
     if (o !== 0) { car.target += o; return; }
   }
-  // Centre card or the button: case studies come later
-  const t = nowSec();
-  car.titleScr = makeScramble(car.titleText.length, t);
-  document.getElementById('pfNote').textContent = 'CASE STUDY COMING SOON';
+  // Centre card or the button: dive into the eye for this project's case study
+  openCase(car.cur);
+}
+// Jump the carousel straight to a project (used when a case study opens from a link, or NEXT moves on)
+export function showProject(k) {
+  let o = k - car.target;
+  o = ((o % PN) + PN) % PN; if (o > PN / 2) o -= PN;
+  car.target += o;
+  car.pos = car.target;
+  car.vel = 0;
 }
 // Scroll wheel / trackpad moves one project per notch, with a short cooldown so trackpads don't race
 window.addEventListener('wheel', function (e) {
-  if (page.target !== 'portfolio') return;
+  if (page.target !== 'portfolio' || caseActive()) return;   // inside a case study the wheel scrolls the page
   e.preventDefault();
   car.acc += e.deltaY;
   const now = performance.now();
@@ -171,7 +178,7 @@ window.addEventListener('wheel', function (e) {
   }
 }, { passive: false });
 window.addEventListener('keydown', function (e) {
-  if (page.target !== 'portfolio') return;
+  if (page.target !== 'portfolio' || caseActive()) return;
   if (e.key === 'ArrowDown' || e.key === 'PageDown') { pfStep(1); e.preventDefault(); }
   if (e.key === 'ArrowUp' || e.key === 'PageUp') { pfStep(-1); e.preventDefault(); }
 });

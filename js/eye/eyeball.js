@@ -1,5 +1,5 @@
 // The eye itself: hierarchy, armoured eyeball, lens assembly, and lids, plus their per-frame animation
-import { scene, reduceMotion, TAU, srgb, clamp, lerp, smoothstep, wallMs } from '../core.js';
+import { scene, reduceMotion, TAU, srgb, clamp, lerp, smoothstep, wallMs, camBase } from '../core.js';
 import { state, BLINK, EASE, startBlink } from '../state.js';
 import { makeIrisTexture, makeOverlayTexture, glowTex } from './textures.js';
 import { M, RED, HOT, toEyeAxis, surfaceMatrix } from './materials.js';
@@ -270,7 +270,8 @@ export function updateEyeball(t, dt, tracking, react) {
       state.vRecoil += (-state.recoil * 220 - state.vRecoil * 16) * rh;
       state.recoil += state.vRecoil * rh;
     }
-    rig.position.z = state.recoil + react.lean;
+    // The case study dive rushes it forward until its pupil sits just in front of the camera
+    rig.position.z = state.recoil + react.lean + state.dive.z * Math.max(0, camBase.z - 1.25);
     state.annoy = Math.max(0, state.annoy - dt / 1.4);
   }
   const shake = t < state.shakeUntil && !reduceMotion ? Math.sin(t * 34) * 0.14 * Math.min(1, (state.shakeUntil - t) / 0.55) : 0;
@@ -283,7 +284,7 @@ export function updateEyeball(t, dt, tracking, react) {
   const squintTarget = Math.min(0.62, lerp(state.sweep ? 0.2 : tracking ? 0.0 : 0.06, 0.62, Math.max(anger, state.annoy * 0.8, glare)) + state.travel * 0.25);
   state.squint += (squintTarget - state.squint) * Math.min(1, dt * (state.firing ? 16 : 4));
 
-  const close = state.squint + (1 - state.squint) * state.blinkClose - react.wide;
+  const close = (state.squint + (1 - state.squint) * state.blinkClose) * (1 - state.dive.wide) - react.wide - state.dive.wide * 0.3;
   const closeBottom = Math.max(close, react.bottom);
   topLid.rotation.x = -LID_OPEN * (1 - close);
   bottomLid.rotation.x = LID_OPEN * (1 - closeBottom);
@@ -318,6 +319,7 @@ export function updateEyeball(t, dt, tracking, react) {
     state.apertureTarget = 0.045 + 0.015 * Math.sin(t * 0.7);
   }
   state.apertureTarget = lerp(state.apertureTarget, 0.0, anger);
+  state.apertureTarget = lerp(state.apertureTarget, 0.1, state.dive.wide);   // diving in: the aperture opens right up
   if (react.pin) state.apertureTarget = 0;
   if (react.dilate) state.apertureTarget = 0.09;
   state.aperture += (state.apertureTarget - state.aperture) * Math.min(1, dt * 7);

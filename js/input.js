@@ -7,6 +7,7 @@ import { eyePoke, earPoke } from './reactions.js';
 import { pfClick } from './portfolio.js';
 import { rig } from './eye/eyeball.js';
 import { ears } from './eye/ears.js';
+import { caseActive } from './case.js';
 import { raycaster } from './gaze.js';
 
 let pressedLabel = null;
@@ -116,7 +117,7 @@ export function updateFireZone() {
   }
   state.inNoFire = inside;
   state.overEye = state.hasPointer && state.booted && inside && !state.overEar && !state.firing;
-  const wantFire = state.pointerDown && state.booted && !inside;   // never from the eye itself
+  const wantFire = state.pointerDown && state.booted && !inside && !caseActive();   // never from the eye itself, never inside a case study
   if (wantFire && !state.firing) startFiring();
   else if (!wantFire && state.firing) stopFiring();
 }

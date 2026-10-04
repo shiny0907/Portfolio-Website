@@ -8,6 +8,7 @@ import { contactEl, contactEnter } from './contact.js';
 import { rig } from './eye/eyeball.js';
 import { hud, aura } from './eye/hud.js';
 import { EYE_PARK_X, EYE_PARK_Y } from './layout.js';
+import { caseActive, closeCase, routeCase } from './case.js';
 
 // Each label opens its page and becomes BACK; BACK returns to the hero.
 const LABEL_PAGE = ['about', 'portfolio', 'contact'];
@@ -70,16 +71,20 @@ function isReload() {
 }
 function pageFromHash() {
   const h = location.hash.slice(1);
+  if (/^case\//.test(h)) return 'portfolio';   // a case study lives inside Portfolio
   return h === 'about' || h === 'portfolio' || h === 'contact' ? h : 'hero';
 }
 window.addEventListener('popstate', function () {
   // After any back/forward (or a hand-edited hash) the entry behind this one could be anything, so BACK
   // must no longer use history.back(); otherwise leaving About could land on Portfolio
   page.pushed = false;
+  routeCase(location.hash.slice(1));   // opens or closes a case study as needed
   goPage(pageFromHash());
 });
 window.addEventListener('keydown', function (e) {
-  if (e.key === 'Escape' && page.target !== 'hero') closePage();
+  if (e.key !== 'Escape') return;
+  if (caseActive()) closeCase();   // Escape leaves a case study first, back to Portfolio
+  else if (page.target !== 'hero') closePage();
 });
 
 // Trackpad swipes (and the mouse wheel on the hero) move between pages instead of the browser's back/forward
@@ -96,7 +101,7 @@ window.addEventListener('wheel', function (e) {
   const horizontal = Math.abs(dx) > Math.abs(dy);
   if (horizontal) {
     e.preventDefault();                          // no browser back/forward swipe
-    if (page.target === 'contact') return;
+    if (page.target === 'contact' || caseActive()) return;
   } else {
     // Vertical only navigates on the hero and Contact (About scrolls its text, Portfolio steps its carousel)
     if (page.target !== 'hero' && page.target !== 'contact') return;
@@ -139,7 +144,7 @@ export function updatePage(t) {
   if (!page.routed && state.booted) {
     page.routed = true;
     if (isReload()) { try { if (location.hash) history.replaceState(null, '', location.pathname + location.search); } catch (err) { /* optional */ } }
-    else if (pageFromHash() !== 'hero') goPage(pageFromHash());
+    else if (pageFromHash() !== 'hero') { goPage(pageFromHash()); routeCase(location.hash.slice(1)); }
   }
   if (page.moving) {
     const k01 = clamp((t - page.start) / PAGE_DUR, 0, 1);
@@ -150,8 +155,9 @@ export function updatePage(t) {
   }
   // Labels whose spot the parked eye cuts in half are hidden: CONTACT away from the hero's vertical line,
   // the side labels on (or on the way to) Contact
-  const sideOn = page.target !== 'contact' && page.q < 0.02;
-  const topOn = (page.target === 'hero' || page.target === 'contact') && Math.abs(page.p) < 0.02;
+  // (all of them while a case study is open or opening: the eye is gone, so there's no ring to sit on)
+  const sideOn = page.target !== 'contact' && page.q < 0.02 && !caseActive();
+  const topOn = (page.target === 'hero' || page.target === 'contact') && Math.abs(page.p) < 0.02 && !caseActive();
   setLabelShown(SIDE_LABELS[0], sideOn, t);
   setLabelShown(SIDE_LABELS[1], sideOn, t);
   setLabelShown(SIDE_LABELS[2], topOn, t);
@@ -160,7 +166,8 @@ export function updatePage(t) {
 export function updateTravel(dt) {
   // The eye travels in step with the page (right edge for About, left edge for Portfolio, bottom edge for Contact),
   // so it stays the same distance from the sliding content the whole way
-  const tx = page.p * EYE_PARK_X, ty = -page.q * EYE_PARK_Y;
+  // (diving into a case study, it leaves its parking spot for the middle of the screen)
+  const tx = page.p * EYE_PARK_X * (1 - state.dive.center), ty = -page.q * EYE_PARK_Y;
   const rh = dt / 2;
   for (let s2 = 0; s2 < 2; s2++) {
     state.vRigX += ((tx - state.rigX) * 170 - state.vRigX * 22) * rh;

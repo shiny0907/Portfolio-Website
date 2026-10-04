@@ -210,6 +210,57 @@
   .ct-social:focus-visible { outline: 1px solid var(--red); outline-offset: 2px; }
   .contact-note { margin: 0; min-height: 1.2em; font-size: 0.8125rem; color: var(--red); letter-spacing: 0.08em; }
   .pf-track { position: relative; height: 62%; align-self: center; }
+  /* ---------- Case study (inside the eye, opened from Portfolio) ---------- */
+  .case {
+    position: fixed; inset: 0;
+    z-index: 3;
+    visibility: hidden;
+    overflow-y: auto; overflow-x: hidden;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+    scrollbar-width: none;
+    /* Text scrolling up or down into the corner bands fades out instead of running over the corner texts */
+    -webkit-mask-image: linear-gradient(to bottom, transparent calc(var(--edge) + 28px), #000 calc(var(--edge) + 52px), #000 calc(100% - var(--edge) - 52px), transparent calc(100% - var(--edge) - 28px));
+    mask-image: linear-gradient(to bottom, transparent calc(var(--edge) + 28px), #000 calc(var(--edge) + 52px), #000 calc(100% - var(--edge) - 52px), transparent calc(100% - var(--edge) - 28px));
+  }
+  .case::-webkit-scrollbar { display: none; }
+  /* Readable over the grid: a dark panel behind the text column that stays put while the page scrolls,
+     clear of the top and bottom bands so the corner texts stay visible */
+  .case::before {
+    content: ""; position: fixed; z-index: 0;
+    top: calc(var(--edge) + 40px); bottom: calc(var(--edge) + 40px);
+    left: 50%; width: min(940px, 100%); transform: translateX(-50%);
+    background: rgba(9, 12, 15, 0.9);
+    border-left: 1px solid rgba(201, 212, 222, 0.08); border-right: 1px solid rgba(201, 212, 222, 0.08);
+    pointer-events: none;
+  }
+  .case-inner {
+    position: relative; z-index: 1;
+    box-sizing: border-box;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: calc(var(--edge) + 72px) var(--edge) calc(var(--edge) + 72px);
+  }
+  .case-head .case-back { margin-top: 0; }
+  .case-count { margin: 32px 0 14px; font-size: 0.8125rem; letter-spacing: 0.1em; color: var(--ink-muted); }
+  .case-title { display: block; image-rendering: pixelated; }
+  .case-meta { display: flex; flex-wrap: wrap; gap: 14px 40px; margin: 26px 0 0; }
+  .case-meta dt { font-size: 0.75rem; letter-spacing: 0.12em; color: var(--ink-muted); }
+  .case-meta dd { margin: 4px 0 0; font-size: 0.9375rem; color: var(--name); }
+  .case-cover { margin: 36px 0 0; border: 1px solid rgba(201, 212, 222, 0.2); }
+  .case-cover img { display: block; width: 100%; height: auto; }
+  .case-section { margin-top: 48px; }
+  .case-h { display: block; image-rendering: pixelated; margin-bottom: 14px; }
+  .case-section p { margin: 0 0 12px; max-width: 64ch; font-size: 1rem; line-height: 1.7; color: var(--ink); }
+  /* Not written yet: a label and a few dim lines where the text will go */
+  .case-soon { display: grid; gap: 10px; max-width: 64ch; }
+  .case-soon span { font-size: 0.75rem; letter-spacing: 0.14em; color: var(--red); }
+  .case-soon i { display: block; height: 10px; background: rgba(201, 212, 222, 0.07); }
+  .case-soon i:nth-child(3) { width: 86%; }
+  .case-soon i:nth-child(4) { width: 58%; }
+  .case-foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; margin-top: 64px; padding-top: 28px; border-top: 1px solid rgba(201, 212, 222, 0.12); }
+  .case-foot .pf-case { margin-top: 0; }
+  .case-veil { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 40; pointer-events: none; }
   .pf-track canvas { display: block; width: 100%; height: 100%; }
   .sr-only {
     position: absolute; width: 1px; height: 1px; overflow: hidden;
